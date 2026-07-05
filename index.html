@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ABAP 개발 사례 · 가이드 — would-you</title>
+<meta name="description" content="SAP ABAP 개발 학습 사례와 실전 가이드 모음. 직접 정리하며 남긴 매뉴얼형 문서들.">
+<style>
+  :root{
+    --ground:#F6F7F9; --surface:#FFFFFF; --surface-2:#FBFCFD;
+    --ink:#16181D; --ink-soft:#59627A; --ink-faint:#8A93A6;
+    --line:#E4E7EC; --line-soft:#EEF1F5;
+    --accent:#0B5CAB; --accent-deep:#083E76; --accent-wash:#EAF2FB;
+    --risk:#C0392B; --warn:#C77D0A; --ok:#2E7D46;
+    --abap:#3D4EA8;
+    --sans:'Pretendard','Pretendard Variable','Apple SD Gothic Neo','Malgun Gothic',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+    --mono:ui-monospace,'JetBrains Mono','D2Coding','SFMono-Regular',Consolas,'Courier New',monospace;
+    --measure:52rem;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%}
+  body{background:var(--ground);color:var(--ink);font-family:var(--sans);
+    font-size:17px;line-height:1.75;letter-spacing:-.003em;word-break:keep-all;overflow-wrap:break-word;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:var(--measure);margin:0 auto;padding:0 24px}
+  a{color:var(--accent);text-decoration:none;border-bottom:1px solid transparent}
+  a:hover{border-bottom-color:var(--accent)}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+
+  .hero{padding:8vh 0 3rem;border-bottom:1px solid var(--line)}
+  .back{display:inline-block;font-family:var(--mono);font-size:13px;color:var(--ink-faint);border-bottom:1px solid var(--line);margin-bottom:1.6rem}
+  .back:hover{color:var(--accent);border-bottom-color:var(--accent)}
+  .signal{display:flex;gap:7px;margin-bottom:1.4rem}
+  .signal span{width:11px;height:11px;border-radius:50%}
+  .signal .r{background:var(--risk)} .signal .a{background:var(--warn)} .signal .g{background:var(--ok)}
+  .brand{font-family:var(--mono);font-size:13.5px;letter-spacing:.02em;color:var(--accent-deep);font-weight:500}
+  h1{font-size:clamp(38px,6.6vw,64px);line-height:1.04;letter-spacing:-.03em;font-weight:800;margin:.5rem 0 .6rem}
+  .tagline{font-size:clamp(16px,2.3vw,19px);color:var(--ink-soft);font-weight:500;line-height:1.6;max-width:40rem}
+  .meta{display:flex;flex-wrap:wrap;gap:.5rem 1.5rem;font-size:14px;color:var(--ink-faint);margin-top:1.7rem;padding-top:1.4rem;border-top:1px solid var(--line-soft)}
+  .meta b{color:var(--ink-soft);font-weight:600}
+
+  section{padding:3.2rem 0;border-bottom:1px solid var(--line)}
+  .eyebrow{display:flex;align-items:center;gap:.6rem;font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);margin-bottom:1.3rem}
+  .eyebrow .count{font-family:var(--mono);font-size:11.5px;background:var(--accent-wash);color:var(--accent-deep);padding:2px 8px;border-radius:6px;font-weight:700;letter-spacing:0}
+
+  .cards{display:grid;grid-template-columns:1fr;gap:1.2rem}
+  @media(min-width:680px){.cards{grid-template-columns:1fr 1fr}}
+  .card{display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden;transition:border-color .15s,box-shadow .15s,transform .15s}
+  .card:hover{border-color:#C7D6E8;box-shadow:0 10px 32px -14px rgba(11,92,171,.32);transform:translateY(-3px)}
+  .card a.card-hit{border:0;color:inherit;display:flex;flex-direction:column;height:100%}
+  .card a.card-hit:hover{border:0}
+  .cover{position:relative;aspect-ratio:16/7;background:radial-gradient(120% 140% at 12% 0%,#4C5BC0 0%,#3D4EA8 45%,#242E66 100%);display:flex;align-items:flex-end;padding:16px 18px;color:#fff;overflow:hidden}
+  .cover::after{content:"";position:absolute;inset:0;background:radial-gradient(60% 90% at 88% 18%,rgba(255,255,255,.16),transparent 60%)}
+  .cover .cv-tag{position:relative;font-family:var(--mono);font-size:11.5px;letter-spacing:.04em;background:rgba(255,255,255,.16);padding:3px 9px;border-radius:20px;backdrop-filter:blur(2px)}
+  .cover .cv-dots{position:absolute;top:14px;left:18px;display:flex;gap:6px}
+  .cover .cv-dots span{width:9px;height:9px;border-radius:50%;opacity:.95}
+  .card-body{padding:1.15rem 1.3rem 1.4rem;display:flex;flex-direction:column;gap:.5rem;flex:1}
+  .tags{display:flex;flex-wrap:wrap;gap:.35rem;margin-bottom:.15rem}
+  .tag{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.02em;padding:2px 8px;border-radius:5px}
+  .tag.abap{background:#E9EBF7;color:var(--abap)} .tag.sap{background:#EAF2FB;color:var(--accent)}
+  .card-title{font-size:20px;font-weight:750;line-height:1.32;letter-spacing:-.01em;color:var(--ink)}
+  .card-blurb{font-size:14.5px;color:var(--ink-soft);line-height:1.62;flex:1}
+  .card-go{font-size:13.5px;font-weight:700;color:var(--accent);margin-top:.4rem;letter-spacing:.01em}
+  .card:hover .card-go{color:var(--accent-deep)}
+  .soon-note{font-size:14px;color:var(--ink-faint);margin-top:1.4rem;padding-top:1.2rem;border-top:1px solid var(--line-soft)}
+
+  footer{padding:2.6rem 0 4rem;font-size:13.5px;color:var(--ink-faint)}
+  footer .fl{display:flex;flex-wrap:wrap;gap:.5rem 1.4rem;margin-bottom:.6rem}
+  footer a{color:var(--ink-soft);border-bottom:1px solid var(--line)}
+  footer a:hover{color:var(--accent);border-bottom-color:var(--accent)}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <a class="back" href="https://would-you-sap.github.io/">← would-you 포탈</a>
+    <div class="signal"><span class="r"></span><span class="a"></span><span class="g"></span></div>
+    <div class="brand">would-you · SAP</div>
+    <h1>ABAP</h1>
+    <p class="tagline">SAP ABAP 개발을 처음부터 익히는 실전 사례와 학습 가이드를 모읍니다. 실습 화면과 코드로 하나씩 정리한 매뉴얼형 기록입니다.</p>
+    <div class="meta">
+      <span><b>주제</b> · SAP ABAP / 기초</span>
+      <span><b>형식</b> · 학습 가이드</span>
+      <span><a href="https://github.com/Would-you-sap/ABAP">repo ↗</a></span>
+    </div>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+    <div class="eyebrow">사례 · Cases <span class="count">1</span></div>
+
+    <div class="cards" id="grid">
+
+      <div class="card">
+        <a class="card-hit" href="./guide-unit01-05/">
+          <div class="cover">
+            <div class="cv-dots"><span style="background:#FF6B5E"></span><span style="background:#FFD166"></span><span style="background:#7CE0A3"></span></div>
+            <span class="cv-tag">GUIDE · 작성 중</span>
+          </div>
+          <div class="card-body">
+            <div class="tags"><span class="tag abap">ABAP</span><span class="tag sap">기초</span></div>
+            <div class="card-title">SAP ABAP 개발 가이드 (UNIT 01–05)</div>
+            <p class="card-blurb">SAP ERP History·Landscape부터 System Navigation, ABAP Repository·Workbench, 기본 프로그래밍까지. 실습 화면과 코드로 정리한 ABAP 학습 가이드입니다. (계속 업데이트되는 작성 중 문서)</p>
+            <span class="card-go">읽기 →</span>
+          </div>
+        </a>
+      </div>
+
+    </div>
+    <p class="soon-note">ABAP 개발 사례를 계속 추가해 나갑니다. 다음 가이드가 준비되는 대로 이곳에 올라옵니다.</p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="fl">
+      <a href="https://would-you-sap.github.io/">← 포탈로</a>
+      <a href="https://github.com/Would-you-sap/ABAP">github.com/Would-you-sap/ABAP ↗</a>
+    </div>
+    <div>© 2026 would-you · SAP · AI · UI5 개발 기록</div>
+  </div>
+</footer>
+
+</body>
+</html>
