@@ -4108,75 +4108,110 @@ ENDMODULE.
 <img src="img/abap23_Untitled%20103.png" alt=""></li>
 <li>스크린 100번 생성 모듈풀은 실질적으로 Flow logic 에서 이루어짐
 <img src="img/abap23_Untitled%20105.png" alt=""></li>
-<li>100번 Screen Layout 생성 화면에 표시할 텍스트를 입력한다. Name의 경우 필수 입력값이지만 입력하지 않고 저장하면 문제 없다. 4-1. 목적. 각 해당하는 필드에 코드 입력시 이름이 표시되도록 하자. 4-2. Layout 생성 Dictionary/Program Fields Window 를 통해 파라미터를 셋팅한다. 텍스트로 표시하는 필드는 Output Only로 설정해주는걸 추천한다. 필드가 너무 길어서 줄여야 할 경우 아래와 같이 Scrollable 옵션을 체크한다. Def.Length 는 입력 가능한 최대 길이 Vis.Length 는 표시되는 길이 AS LABEL ON CHECK 각 필드의 밑에 있는 선의 여부 써치헬프 등록 LAYOUT 설정 후 저장 - 엑티브 티코드를 통해 확인.</li>
-<li>PAI 선언. 각 필드별로 데이터 입력 후 텍스트를 셋팅하도록 모듈 생성 !!! gs_input-matnr 에서 엔터 수행시 set_maktx 모듈 수행. !!! ON REQUEST 는 데이터 변경이 이루어졌을때만 수행되도록 하는 옵션. PROCESS BEFORE OUTPUT.
-MODULE status_0100.</li>
+<li>100번 Screen Layout 생성 화면에 표시할 텍스트를 입력한다. Name의 경우 필수 입력값이지만 입력하지 않고 저장하면 문제 없다.<ul>
+<li>4-1. 목적. 각 해당하는 필드에 코드 입력시 이름이 표시되도록 하자.</li>
+<li>4-2. Layout 생성 Dictionary/Program Fields Window 를 통해 파라미터를 셋팅한다. 텍스트로 표시하는 필드는 Output Only로 설정해주는걸 추천한다. 필드가 너무 길어서 줄여야 할 경우 아래와 같이 Scrollable 옵션을 체크한다. Def.Length 는 입력 가능한 최대 길이 Vis.Length 는 표시되는 길이 AS LABEL ON CHECK 각 필드의 밑에 있는 선의 여부 써치헬프 등록 LAYOUT 설정 후 저장 - 엑티브 티코드를 통해 확인.</li>
 </ul>
-<p>PROCESS AFTER INPUT.</p>
-<p>  FIELD : gs_input-matnr MODULE set_maktx ON REQUEST,
+</li>
+<li>PAI 선언. 각 필드별로 데이터 입력 후 텍스트를 셋팅하도록 모듈 생성 !!! gs_input-matnr 에서 엔터 수행시 set_maktx 모듈 수행. !!! ON REQUEST 는 데이터 변경이 이루어졌을때만 수행되도록 하는 옵션.</li>
+</ul>
+<pre class="code code-wrap"><code class="language-abap">PROCESS BEFORE OUTPUT.
+  MODULE status_0100.
+
+PROCESS AFTER INPUT.
+
+  FIELD : gs_input-matnr MODULE set_maktx ON REQUEST,
           gs_input-werks MODULE set_name1 ON REQUEST,
-          gs_input-mtart MODULE set_mtbez ON REQUEST.</p>
-<p>  MODULE exit_0100 AT EXIT-COMMAND.</p>
-<p>PROCESS ON VALUE-REQUEST.
+          gs_input-mtart MODULE set_mtbez ON REQUEST.
+
+  MODULE exit_0100 AT EXIT-COMMAND.
+
+PROCESS ON VALUE-REQUEST.
   FIELD : gs_input-werks MODULE f4_werks.
-FIELD : gs_input-matnr MODULE set_maktx ON REQUEST MODULE set_maktx INPUT.</p>
-<p>  PERFORM set_maktx.</p>
-<p>ENDMODULE.
-<img src="img/abap23_Untitled%20114.png" alt="">
-set_maktx 에서는 자재코드(matnr)를 가지고 텍스트를 뽑아낸다. INTO gs_input-maktx 에서 데이터를 받아 표시한다. FORM set_maktx .</p>
-<p>  SELECT SINGLE maktx
+FIELD : gs_input-matnr MODULE set_maktx ON REQUEST MODULE set_maktx INPUT.
+
+  PERFORM set_maktx.
+
+ENDMODULE.
+</code></pre>
+<p><img src="img/abap23_Untitled%20114.png" alt=""></p>
+<p>set_maktx 에서는 자재코드(matnr)를 가지고 텍스트를 뽑아낸다. INTO gs_input-maktx 에서 데이터를 받아 표시한다.</p>
+<pre class="code code-wrap"><code class="language-abap">FORM set_maktx .
+
+  SELECT SINGLE maktx
     INTO gs_input-maktx
     FROM makt
    WHERE matnr = gs_input-matnr
-     AND spras = sy-langu.</p>
-<p>ENDFORM. 같은 방식으로 Plant, Material Type 설정한다. FORM set_mtbez .</p>
-<p>  SELECT SINGLE mtbez
+     AND spras = sy-langu.
+
+ENDFORM.
+</code></pre>
+<p>같은 방식으로 Plant, Material Type 설정한다.</p>
+<pre class="code code-wrap"><code class="language-abap">FORM set_mtbez .
+
+  SELECT SINGLE mtbez
     INTO gs_input-mtbez
     FROM t134t
    WHERE mtart = gs_input-mtart
-     AND spras = sy-langu.</p>
-<p>ENDFORM.</p>
+     AND spras = sy-langu.
+
+ENDFORM.
+</code></pre>
 <p>....</p>
-<p>FORM set_name1 .</p>
-<p>  SELECT SINGLE name1
+<pre class="code code-wrap"><code class="language-abap">FORM set_name1 .
+
+  SELECT SINGLE name1
     INTO gs_input-name1
     FROM t001w
-   WHERE werks = gs_input-werks.</p>
-<p>ENDFORM.
-<img src="img/abap23_Untitled%20115.png" alt=""></p>
-<ul>
-<li><p>Value Request Plant 의 경우 Search Help 사용시 코드가 아닌 이름이 필드에 셋팅되게 되어 있다. 이런경우 Search Help 사용이 불가능하니. 직접 .Value Request 를 생성 사용하도록 하자. PROCESS ON VALUE-REQUEST. 를 선언하고 하위에 필드를 선언하면. 해당 필드에 박스?가 생성된다. PROCESS ON VALUE-REQUEST.
-FIELD : gs_input-werks MODULE f4_werks. 6-1. 조회하고자 하는 창고코드, 창고명을 조회하는 쿼리를 생성하고 인터널 테이블에 데이터를 보관한다. 6-2. 이후 CALL FUNCTION &#39;F4IF_INT_TABLE_VALUE_REQUEST&#39; 함수를 통해서 GS_INPUT-WERKS 에 WERKS 값을 입력한다. FORM f4_werks .</p>
-<p>DATA : BEGIN OF ls_value,
-     werks TYPE t001w-werks,
-     name1 TYPE t001w-name1,
-   END OF ls_value,
+   WHERE werks = gs_input-werks.
 
-   lt_value LIKE TABLE OF ls_value.
-REFRESH lt_value.</p>
-<p>SELECT werks name1
-  INTO CORRESPONDING FIELDS OF TABLE lt_value
-  FROM t001w.</p>
-<p>IF sy-subrc &lt;&gt; 0.
-  MESSAGE s000 WITH &#39;Plant not found&#39;.
-  EXIT.
-ENDIF.</p>
-</li>
+ENDFORM.
+</code></pre>
+<p><img src="img/abap23_Untitled%20115.png" alt=""></p>
+<ul>
+<li>Value Request Plant 의 경우 Search Help 사용시 코드가 아닌 이름이 필드에 셋팅되게 되어 있다. 이런경우 Search Help 사용이 불가능하니. 직접 .Value Request 를 생성 사용하도록 하자. <code>PROCESS ON VALUE-REQUEST.</code> 를 선언하고 하위에 필드를 선언하면. 해당 필드에 박스?가 생성된다.</li>
 </ul>
-<p>CALL FUNCTION &#39;F4IF_INT_TABLE_VALUE_REQUEST&#39;
+<pre class="code code-wrap"><code class="language-abap">PROCESS ON VALUE-REQUEST.
+  FIELD : gs_input-werks MODULE f4_werks.
+</code></pre>
+<ul>
+<li>6-1. 조회하고자 하는 창고코드, 창고명을 조회하는 쿼리를 생성하고 인터널 테이블에 데이터를 보관한다.</li>
+<li>6-2. 이후 CALL FUNCTION &#39;F4IF_INT_TABLE_VALUE_REQUEST&#39; 함수를 통해서 GS_INPUT-WERKS 에 WERKS 값을 입력한다.</li>
+</ul>
+<pre class="code code-wrap"><code class="language-abap">FORM f4_werks .
+
+  DATA : BEGIN OF ls_value,
+           werks TYPE t001w-werks,
+           name1 TYPE t001w-name1,
+         END OF ls_value,
+
+         lt_value LIKE TABLE OF ls_value.
+
+  REFRESH lt_value.
+
+  SELECT werks name1
+    INTO CORRESPONDING FIELDS OF TABLE lt_value
+    FROM t001w.
+
+  IF sy-subrc &lt;&gt; 0.
+    MESSAGE s000 WITH &#39;Plant not found&#39;.
+    EXIT.
+  ENDIF.
+
+CALL FUNCTION &#39;F4IF_INT_TABLE_VALUE_REQUEST&#39;
   EXPORTING
     retfield               = &#39;WERKS&#39;    &quot; 반환할 값. 필드 아이디.
    DYNPPROG               = sy-repid
    DYNPNR                 = sy-dynnr
    DYNPROFIELD            = &#39;GS_INPUT-WERKS&#39; &quot; 값이 셋팅될 화면의 필드 ID
    WINDOW_TITLE           = &#39;Plant List&#39;
-   VALUE_ORG              = &#39;S&#39;</p>
-<ul>
-<li>DISPLAY                = &#39;X&#39;      &quot; 화면의 필드에 값을 세팅 못화게 함
+   VALUE_ORG              = &#39;S&#39;
+*   DISPLAY                = &#39;X&#39;      &quot; 화면의 필드에 값을 세팅 못화게 함
   tables
-value_tab              = lt_value.</li>
-</ul>
-<p>ENDFORM.</p>
+    value_tab              = lt_value.
+
+ENDFORM.
+</code></pre>
 <h2 id="s87">8.5 다이나믹 타이틀 (SET TITLEBAR … WITH)</h2>
 <pre class="code code-wrap"><code class="language-abap">MODULE status_0100 OUTPUT.
  SET PF-STATUS &#39;S0100&#39;.
@@ -9097,18 +9132,30 @@ zdown</p>
 </code></pre>
 <p>CELL 스타일 적용 순서.</p>
 <ul>
-<li>ITAB 에 스타일 적용 필드 추가(lvc_t_styl) DATA : BEGIN OF gs_data .
-   INCLUDE STRUCTURE zc2t010011.</li>
+<li>ITAB 에 스타일 적용 필드 추가(lvc_t_styl)</li>
 </ul>
-<p>DATA :   celltab TYPE lvc_t_styl,           &quot; 스타일을 통해서 특정한셀에 스타일을 줄 수 있다. 부분적으로 열고 닫고 하겠다.
-       END OF gs_data,</p>
+<pre class="code code-wrap"><code class="language-abap">DATA : BEGIN OF gs_data .
+         INCLUDE STRUCTURE zc2t010011.
+DATA :   celltab TYPE lvc_t_styl,           &quot; 스타일을 통해서 특정한셀에 스타일을 줄 수 있다. 부분적으로 열고 닫고 하겠다.
+       END OF gs_data,
+</code></pre>
 <ul>
-<li>스타일을 적용할 필드ID 를 스타일필드에 추가 ls_style-fieldname = &#39;필드이름&#39;.
-ls_style-style = cl_gui_alv_grid=&gt;mc_style_disabled. &quot;enabled 은 가능하도록. disabled 는 불가능하도록
-APPEND ls_style TO lt_style.</li>
-<li>스타일 필드정보를 가진 lt_t_styl 을 itab의 스타일 필드에 append APPEND LINES OF lt_style TO gs_data-celltab.</li>
-<li>layout 에 stylefname 에 itab의 스타일 필드 ID를 입력 gs_layout-stylefname = &#39;CELLTAB&#39;.</li>
+<li>스타일을 적용할 필드ID 를 스타일필드에 추가</li>
 </ul>
+<pre class="code code-wrap"><code class="language-abap">ls_style-fieldname = &#39;필드이름&#39;.
+ls_style-style = cl_gui_alv_grid=&gt;mc_style_disabled. &quot;enabled 은 가능하도록. disabled 는 불가능하도록
+APPEND ls_style TO lt_style.
+</code></pre>
+<ul>
+<li>스타일 필드정보를 가진 lt_t_styl 을 itab의 스타일 필드에 append</li>
+</ul>
+<pre class="code code-wrap"><code class="language-abap">APPEND LINES OF lt_style TO gs_data-celltab.
+</code></pre>
+<ul>
+<li>layout 에 stylefname 에 itab의 스타일 필드 ID를 입력</li>
+</ul>
+<pre class="code code-wrap"><code class="language-abap">gs_layout-stylefname = &#39;CELLTAB&#39;.
+</code></pre>
 <h3 id="s114">data_changed event</h3>
 <p>check_changed_data 는 실행단계에서 변경을 감지 하고 alv에서 itab에 적용한다면,
 data_changed event는 인터널 테이블에서 변경시 alv에 즉시 적용되는 이벤트이다.
@@ -10439,35 +10486,47 @@ PROCESS AFTER INPUT.
 <p>SET_READ_FOR_INPUT 메소드를 통해서 조회,편집모드로 전환할 수 있다.
 <img src="img/abap23_Untitled%2095.png" alt=""></p>
 <ul>
-<li><p>수정 가능한 영역을 지정하기 위해 파라미터 edit 을 추가한다. 이렇게 설정하면 아래와 같이 기본적으로 수정 가능한 edit 이 활성화 된다. 하지만. 항시 수정 모드이기 때문에 많은 문제점을 야기할 수 있다. 여기에 CHANGE(EDIT) 버튼을 달아서 평상시에는 조회 모드 이지만 버튼 클릭시 EDIT이 활성화 될 수 있도록 기능을 추가해 보자. 우선 버튼을 생성한다. 다음으로는 user_command_0100 에 CHANGE 에만 수행하는 기능을 추가한다. MODULE user_command_0100 INPUT.
-case gv_okcode.
-  when &#39;REFRESH&#39;.
-clear gv_okcode.        &quot; ok_code 클리어를 통해서 중복수행의 위험을 방지한다.
-PERFORM get_data.       &quot; 데이터 호출
-perform refresh_grid.   &quot; alv 초기화 수행 하는 form 생성
-  WHEN &#39;CHANGE&#39;.       &quot;단계 1에서 지정한 Function Code
-PERFORM TOGGLE_MODE.
-ENDCASE.
-ENDMODULE. TOGGLE_MODE 는 gcl_grid-&gt;is_ready_for_input( ) 메소드에서 0/1 로 값을 받아 EDIT 모드인지 아닌지 판단 하는 변수 lv_result  를 선언한다. 0/1 상태에 따라서 DISPLAY 모드인 경우에는 EDIT 활성화를, EDIT 모드일떄는 DISPLAY 모드로 변경한다. FORM toggle_mode .
-DATA : lv_result TYPE c.</p>
-<p>lv_result = gcl_grid-&gt;is_ready_for_input( ).</p>
-<p>CASE lv_result.
-  WHEN 0.  &quot;Display 모드인 경우, Change로 변경
-CALL METHOD gcl_grid-&gt;set_ready_for_input
-  EXPORTING
-    i_ready_for_input = 1.
-  WHEN 1.  &quot;Change 모드인 경우, Display로 변경
-CALL METHOD gcl_grid-&gt;set_ready_for_input
-  EXPORTING
-    i_ready_for_input = 0.
-ENDCASE.</p>
-</li>
+<li>수정 가능한 영역을 지정하기 위해 파라미터 edit 을 추가한다. 이렇게 설정하면 아래와 같이 기본적으로 수정 가능한 edit 이 활성화 된다. 하지만. 항시 수정 모드이기 때문에 많은 문제점을 야기할 수 있다. 여기에 CHANGE(EDIT) 버튼을 달아서 평상시에는 조회 모드 이지만 버튼 클릭시 EDIT이 활성화 될 수 있도록 기능을 추가해 보자. 우선 버튼을 생성한다. 다음으로는 user_command_0100 에 CHANGE 에만 수행하는 기능을 추가한다.</li>
 </ul>
-<p>ENDFORM. 이런게 하면 최초에는 EDIT 모드이기 때문에 DISPLAY_SCREEN에서 컨테이너를 만든다음, 최초에는 EDIT 이 불가능하도록 i_ready_for_input = 0. 값을 준다. *   최초에는 수정이 불가능하도록 edit 0 을 설정한다.
+<pre class="code code-wrap"><code class="language-abap">MODULE user_command_0100 INPUT.
+  case gv_okcode.
+    when &#39;REFRESH&#39;.
+      clear gv_okcode.        &quot; ok_code 클리어를 통해서 중복수행의 위험을 방지한다.
+      PERFORM get_data.       &quot; 데이터 호출
+      perform refresh_grid.   &quot; alv 초기화 수행 하는 form 생성
+    WHEN &#39;CHANGE&#39;.       &quot;단계 1에서 지정한 Function Code
+      PERFORM TOGGLE_MODE.
+  ENDCASE.
+ENDMODULE.
+</code></pre>
+<p>TOGGLE_MODE 는 gcl_grid-&gt;is_ready_for_input( ) 메소드에서 0/1 로 값을 받아 EDIT 모드인지 아닌지 판단 하는 변수 lv_result  를 선언한다. 0/1 상태에 따라서 DISPLAY 모드인 경우에는 EDIT 활성화를, EDIT 모드일떄는 DISPLAY 모드로 변경한다.</p>
+<pre class="code code-wrap"><code class="language-abap">FORM toggle_mode .
+  DATA : lv_result TYPE c.
+
+  lv_result = gcl_grid-&gt;is_ready_for_input( ).
+
+  CASE lv_result.
+    WHEN 0.  &quot;Display 모드인 경우, Change로 변경
+      CALL METHOD gcl_grid-&gt;set_ready_for_input
+        EXPORTING
+          i_ready_for_input = 1.
+
+    WHEN 1.  &quot;Change 모드인 경우, Display로 변경
+      CALL METHOD gcl_grid-&gt;set_ready_for_input
+        EXPORTING
+          i_ready_for_input = 0.
+  ENDCASE.
+
+ENDFORM.
+</code></pre>
+<p>이런게 하면 최초에는 EDIT 모드이기 때문에 DISPLAY_SCREEN에서 컨테이너를 만든다음, 최초에는 EDIT 이 불가능하도록 i_ready_for_input = 0. 값을 준다.</p>
+<pre class="code code-wrap"><code class="language-abap">*   최초에는 수정이 불가능하도록 edit 0 을 설정한다.
     CALL METHOD gcl_grid-&gt;set_ready_for_input
       EXPORTING
-        i_ready_for_input = 0. 그러면 최초에는 DISPLAY 모드지만 CHANGE 버튼 클릭시 아래와 같이 EDIT을 허용한 필드는 수정할 수 있도록 변경된다.
-<strong>참고 사이트</strong>
+        i_ready_for_input = 0.
+</code></pre>
+<p>그러면 최초에는 DISPLAY 모드지만 CHANGE 버튼 클릭시 아래와 같이 EDIT을 허용한 필드는 수정할 수 있도록 변경된다.</p>
+<p><strong>참고 사이트</strong>
 ALV Display ↔ Change 토글 버튼
 <a href="https://applemango2021.tistory.com/29">https://applemango2021.tistory.com/29</a>
 ALV Grid를 사용하는 프로그램에서 Display ↔ Change 토클 버튼을 구현할 때에는 클래스 CL_GUI_ALV_GRID 의 SET_READY_FOR_INPUT 메소드를 사용하면 된다.
@@ -13365,17 +13424,22 @@ data : gs_data type zc2cds010005.
 SELECTION-SCREEN END OF BLOCK bl1.
 </code></pre>
 <p><img src="img/abap23_Untitled%20194.png" alt="">
-3-1. 글로벌 클래스 생성 T-Code : SE24 메소드 생성 파라미터 정의 소스코드 작성
-<img src="img/abap23_Untitled%20198.png" alt="">
-3-2. 생성한 클래스(메소드) 호출. FORM get_data .</p>
-<p>  DATA : lv_tabix    TYPE sy-tabix,
+3-1. 글로벌 클래스 생성 T-Code : SE24 메소드 생성 파라미터 정의 소스코드 작성</p>
+<p><img src="img/abap23_Untitled%20198.png" alt=""></p>
+<p>3-2. 생성한 클래스(메소드) 호출.</p>
+<pre class="code code-wrap"><code class="language-abap">FORM get_data .
+
+  DATA : lv_tabix    TYPE sy-tabix,
          lcl_cds010005 type ref to zclc201_0002,
          lv_code,
-         lv_msg(100).</p>
-<p>  CLEAR   : gs_data.
-  REFRESH : gt_data.</p>
-<p>  create OBJECT lcl_cds010005.</p>
-<p>  CALL METHOD lcl_cds010005-&gt;get_zc2cds010005
+         lv_msg(100).
+
+  CLEAR   : gs_data.
+  REFRESH : gt_data.
+
+  create OBJECT lcl_cds010005.
+
+  CALL METHOD lcl_cds010005-&gt;get_zc2cds010005
     EXPORTING
       pi_werks = pa_werks
     IMPORTING
@@ -13383,8 +13447,10 @@ SELECTION-SCREEN END OF BLOCK bl1.
       pe_msg   = lv_msg
     changing
       pt_table = gt_data
-      it_matnr = so_matnr[].</p>
-<p>ENDFORM.</p>
+      it_matnr = so_matnr[].
+
+ENDFORM.
+</code></pre>
 <h2 id="s174">OData — Gateway Service Builder (SEGW)</h2>
 <p>Gateway Service를 개발하기 위해서는 아래 T-Code가 필요하다.</p>
 <ul>
