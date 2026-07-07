@@ -3413,9 +3413,15 @@ PROCESS AFTER INPUT.
 <ul>
 <li>SCARR 와 SPFLI 를 연결한 Database View 생성 ZC2V01001</li>
 <li>SELECTION SCREEN 작성</li>
-<li>SFLIGHT 와 VIEW 를 조인해서 위의 필드를 SELECT 하는 FUNCTION 작성 데이터 조회 후 ITAB 의 데이터중에서 SEATESMAX_B 가 ‘30’이면 PLANETPYE = ‘747-400’ SEATESMAX_B 가 ‘31’이면 PLANETYPE = ‘A340-600’ 그 이외는 공백
+<li>SFLIGHT 와 VIEW 를 조인해서 위의 필드를 SELECT 하는 FUNCTION 작성.</li>
+<li>데이터 조회 후 ITAB 의 데이터 중에서 PLANETYPE 을 다음과 같이 설정:<ul>
+<li><code>SEATESMAX_B = &#39;30&#39;</code> → PLANETYPE = <code>&#39;747-400&#39;</code></li>
+<li><code>SEATESMAX_B = &#39;31&#39;</code> → PLANETYPE = <code>&#39;A340-600&#39;</code></li>
+<li>그 이외는 공백
 <strong>화면</strong>
 <img src="img/abap23_Untitled%2046.png" alt=""></li>
+</ul>
+</li>
 </ul>
 <p><em>Case 4 실행 셀렉션 — Airline/Connection/Flight Date 입력</em></p>
 <p><img src="img/abap23_Untitled%2047.png" alt="">
@@ -7511,15 +7517,74 @@ zdown</p>
 <p><em>MODIFY ... TRANSPORTING color — 색상(color) itab 편집 코드</em></p>
 <h2 id="s109">Case 5 — 종합 실습 ZC2R260008</h2>
 <p><strong>시험문제</strong></p>
+<p><strong>1. 자재 평가 테이블 생성 — <code>ZC2T010100</code></strong> (Table Description ⇒ <em>Material of valuation</em>)</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th align="center">PK</th>
+<th>DataElement</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>MATNR</td>
+<td align="center">O</td>
+<td>MATNR</td>
+</tr>
+<tr>
+<td>WERKS</td>
+<td align="center">O</td>
+<td>WERKS_D</td>
+</tr>
+<tr>
+<td>VPRSV</td>
+<td align="center"></td>
+<td>VPRSV</td>
+</tr>
+<tr>
+<td>BKLAS</td>
+<td align="center"></td>
+<td>BKLAS</td>
+</tr>
+<tr>
+<td>VERPR</td>
+<td align="center"></td>
+<td>VERPR</td>
+</tr>
+<tr>
+<td>WAERS</td>
+<td align="center"></td>
+<td>WAERS</td>
+</tr>
+<tr>
+<td>MENGE</td>
+<td align="center"></td>
+<td>MENGE_D</td>
+</tr>
+<tr>
+<td>MEINS</td>
+<td align="center"></td>
+<td>MEINS</td>
+</tr>
+</tbody></table>
 <ul>
-<li>아래의 필드를 가진 테이블을 만드시오 Table Decription ⇒ Material of valuation 생성한 테이블 이름 : ZC2T010100 Field PK DataElement Type Length Description MATNR O MATNR WERKS O WERKS_D VPRSV VPRSV BKLAS BKLAS VERPR VERPR WAERS WAERS MENGE MENGE_D MEINS MEINS 위 테이블의 데이터를 유지보수할 화면을 만들고 t-code를 생성할것. 1-1 테이블 생성 및 유지보수 화면 만들기. 티코드 생성하기. 11일 수업내용 참고하여 만들것</li>
-<li>위 에서 생성한 테이블 과 makt를 조인하여 아래의 필드를 Select 하는 ALV 를 작성할것. Selection Screen 속성 Input Type WERKS P MATNR S MATNR 속성 MAKTX WERKS VPRSV BKLAS VERPR &#39;S&#39; 인경우 Cell 색상을 &#39;300&#39; &#39;V&#39; 인 경우 Cell 색상을 &#39;500’ WAERS MENGE MEINS 2-1. matnr 필드를 더블클릭 하면 ‘mm03’으로 이동 2-2. BKLAS 를 핫스팟 클릭 하면 BKLAS 도메인에 있는 Value table 의 모든필드와 BKLAS의 내역 (text table 찾아서 할것)을 팝업으로 띄울것 2-3. werks 필드를 핫스팟 클릭 하면 werks 필드의 도메인을 확인하여 핫스팟 클릭한 werks의 값에 대한 check table의 werks, name1, name2, starts, fabkl, bwkey, land1 필드를 팝업으로 띄울 것.
-<strong>화면</strong>
-<img src="img/abap23_Untitled%2087.png" alt=""></li>
+<li>위 테이블의 데이터를 <strong>유지보수할 화면</strong>을 만들고 <strong>t-code</strong>를 생성할 것.</li>
+<li>(1-1) 테이블 생성 및 유지보수 화면 만들기 · 티코드 생성 — <em>11일 수업내용 참고</em>.</li>
 </ul>
-<p><em>Case 4 항공편 ALV 셀렉션 스크린 — Airline·Plane Type 입력</em></p>
+<p><strong>2. 위 테이블을 <code>MAKT</code>와 조인해 아래 필드를 Select 하는 ALV 작성</strong></p>
+<ul>
+<li><strong>Selection Screen (Input Type):</strong> <code>WERKS</code> = <strong>P</strong>(Parameter) · <code>MATNR</code> = <strong>S</strong>(Select-Options)</li>
+<li><strong>출력 필드:</strong> MAKTX · WERKS · VPRSV · BKLAS · VERPR · WAERS · MENGE · MEINS</li>
+<li><strong>Cell 색상:</strong> <code>VPRSV = &#39;S&#39;</code> → <code>&#39;300&#39;</code>, <code>&#39;V&#39;</code> → <code>&#39;500&#39;</code></li>
+<li><strong>2-1.</strong> <code>MATNR</code> 더블클릭 → <code>MM03</code> 이동</li>
+<li><strong>2-2.</strong> <code>BKLAS</code> 핫스팟 클릭 → BKLAS 도메인의 <strong>Value table 전체 필드 + BKLAS 내역(text table 찾아서)</strong> 팝업</li>
+<li><strong>2-3.</strong> <code>WERKS</code> 핫스팟 클릭 → WERKS 도메인 확인 → 클릭한 werks 값에 대한 <strong>check table</strong>의 <code>werks · name1 · name2 · starts · fabkl · bwkey · land1</code> 팝업</li>
+</ul>
+<p><strong>화면</strong> <em>(참고 — 아래는 화면 구성 예시로 재사용된 Case 4 항공편 ALV 캡처이며, 본 종합실습(자재)의 실제 출력이 아닙니다.)</em></p>
+<p><img src="img/abap23_Untitled%2087.png" alt=""></p>
+<p><em>참고 예시 — 셀렉션 스크린 구성 (Case 4 항공편 ALV)</em></p>
 <p><img src="img/abap23_Untitled%2088.png" alt=""></p>
-<p><em>Case 4 항공편 ALV 결과 — Pl.type 핫스팟·항공사 목록 표시</em></p>
+<p><em>참고 예시 — ALV 결과·핫스팟 구성 (Case 4 항공편 ALV)</em></p>
 <p><img src="img/abap23_zc2r010018.gif" alt="">
 <strong>프로그램 : ZC2R260008</strong></p>
 <pre class="code code-wrap"><code class="language-abap">*&amp;---------------------------------------------------------------------*
