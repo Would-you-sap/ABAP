@@ -122,6 +122,8 @@
   .doc blockquote p{margin:.35rem auto}.doc blockquote ul,.doc blockquote ol{margin:.4rem auto}
   .doc img{max-width:100%;height:auto;border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 26px -16px rgba(16,24,40,.3);display:block;margin:1.2rem auto}
   .doc p:has(> img):only-child{text-align:center}
+  .doc ul:has(> li.chk){list-style:none;padding-left:.1rem;margin-left:0}
+  .doc li.chk{list-style:none;margin:.35rem 0}
 </style>
 </head>
 <body>
@@ -147,10 +149,10 @@
 <p><strong>📖 이 장의 학습 목표</strong>
 이 장을 마치면 다음을 할 수 있습니다.</p>
 <ul>
-<li>☑️ <strong>타입(형)</strong> 과 <strong>데이터 객체(변수)</strong> 의 차이를 설명하고, <code>TYPES</code>·<code>DATA</code>를 구분해 선언할 수 있다.</li>
-<li>☑️ <code>TYPE</code>(글로벌 타입 참조)과 <code>LIKE</code>(기존 변수 참조)를 상황에 맞게 쓸 수 있다.</li>
-<li>☑️ <code>CONCATENATE</code>·<code>SPLIT</code>·오프셋 표기(<code>+n(m)</code>)로 문자열을 조작할 수 있다.</li>
-<li>☑️ <code>cl_abap_char_utilities</code>의 개행 상수로 여러 줄 텍스트를 저장·복원하는 흐름을 이해한다.</li>
+<li class="chk">☑️ <strong>타입(형)</strong> 과 <strong>데이터 객체(변수)</strong> 의 차이를 설명하고, <code>TYPES</code>·<code>DATA</code>를 구분해 선언할 수 있다.</li>
+<li class="chk">☑️ <code>TYPE</code>(글로벌 타입 참조)과 <code>LIKE</code>(기존 변수 참조)를 상황에 맞게 쓸 수 있다.</li>
+<li class="chk">☑️ <code>CONCATENATE</code>·<code>SPLIT</code>·오프셋 표기(<code>+n(m)</code>)로 문자열을 조작할 수 있다.</li>
+<li class="chk">☑️ <code>cl_abap_char_utilities</code>의 개행 상수로 여러 줄 텍스트를 저장·복원하는 흐름을 이해한다.</li>
 </ul>
 </blockquote>
 <p><strong>들어가기 전에.</strong> ABAP는 SAP ERP를 움직이는 언어입니다. 다른 언어를 다뤄 봤다면 문법 자체는 낯설지 않지만, ABAP만의 두 가지 관례를 먼저 익히면 이후가 쉬워집니다. 하나는 <strong>&quot;틀(타입)과 실물(변수)을 엄격히 구분&quot;</strong> 한다는 점이고, 다른 하나는 대부분의 타입을 <strong>데이터베이스 필드에서 빌려 온다</strong>(<code>TYPE sflight-connid</code> 같은)는 점입니다. 이 장에서 그 감각부터 잡습니다.</p>
@@ -296,10 +298,10 @@ CALL METHOD gcl_editor-&gt;set_text_as_r3table EXPORTING table = lt_line.
 <p><strong>📖 이 장의 학습 목표</strong>
 이 장을 마치면 다음을 할 수 있습니다.</p>
 <ul>
-<li>☑️ 여러 필드를 하나의 레코드로 묶는 <strong>구조체(Structure)</strong> 를 선언하고, <code>INCLUDE</code>로 재사용할 수 있다.</li>
-<li>☑️ 같은 구조의 행을 여러 개 담는 <strong>내부 테이블(Internal Table)</strong> 을 선언하고, 행을 <strong>추가·조회·수정</strong>할 수 있다.</li>
-<li>☑️ <code>SORT</code> → <code>DELETE ADJACENT DUPLICATES</code> → <code>BINARY SEARCH</code>가 왜 한 묶음으로 움직이는지 이해하고 올바른 순서로 쓸 수 있다.</li>
-<li>☑️ <strong>워크에어리어(WA)</strong> 와 내부 테이블의 관계, <code>CLEAR</code>와 <code>REFRESH</code>의 차이를 설명할 수 있다.</li>
+<li class="chk">☑️ 여러 필드를 하나의 레코드로 묶는 <strong>구조체(Structure)</strong> 를 선언하고, <code>INCLUDE</code>로 재사용할 수 있다.</li>
+<li class="chk">☑️ 같은 구조의 행을 여러 개 담는 <strong>내부 테이블(Internal Table)</strong> 을 선언하고, 행을 <strong>추가·조회·수정</strong>할 수 있다.</li>
+<li class="chk">☑️ <code>SORT</code> → <code>DELETE ADJACENT DUPLICATES</code> → <code>BINARY SEARCH</code>가 왜 한 묶음으로 움직이는지 이해하고 올바른 순서로 쓸 수 있다.</li>
+<li class="chk">☑️ <strong>워크에어리어(WA)</strong> 와 내부 테이블의 관계, <code>CLEAR</code>와 <code>REFRESH</code>의 차이를 설명할 수 있다.</li>
 </ul>
 </blockquote>
 <p><strong>들어가기 전에.</strong> 0장에서 변수 하나에 값 하나를 담는 법을 익혔습니다. 하지만 업무 데이터는 &quot;한 줄에 여러 칸&quot;(예: 전표 한 건 = 회사코드 + 전표번호 + 연도 + 금액)이고, 그런 줄이 &quot;여러 개&quot;(전표 목록) 모여 있습니다. 이 두 가지 모양을 ABAP에서 표현하는 도구가 바로 <strong>구조체</strong>(한 줄)와 <strong>내부 테이블</strong>(여러 줄)입니다. 다른 언어의 <code>struct</code>/<code>record</code>와 <code>array</code>/<code>list</code>에 해당한다고 보면 되지만, ABAP에서는 이 둘이 데이터베이스 테이블과 자연스럽게 대응된다는 점이 핵심입니다.</p>
