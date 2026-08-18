@@ -253,7 +253,7 @@
 <p>실무상 유의할 점은 다음 세 가지다.</p>
 <ul>
   <li>롤 변경 후에는 재로그인이 필요하다. 체크는 DB가 아닌 버퍼를 참조한다.</li>
-  <li>롤 값에 <code>KOC1*</code>과 같은 패턴을 부여할 수 있으며, 체크 시점에 매치된다.</li>
+  <li>롤 값에 <code>CC1*</code>과 같은 패턴을 부여할 수 있으며, 체크 시점에 매치된다.</li>
   <li>AUTHORITY-CHECK에 지정하지 않은 필드는 검사되지 않는다. 오브젝트에 필드가
     3개여도 지정한 필드만 비교한다.</li>
 </ul>
@@ -306,6 +306,8 @@
   <tr><td>XUFIELD</td><td>XUFIELD</td><td>권한 필드</td></tr>
   <tr><td>VALUE</td><td>XUVAL</td><td>체크할 값</td></tr>
 </table></div>
+
+<p class="sub">화면 캡처의 시스템 정보와 계정, 조직 값은 가려두었다.</p>
 
 <figure class="shot">
   <img src="images/05_01_se11_structure.png" alt="SE11 구조 ZCMS0070">
@@ -516,7 +518,7 @@ FORM build_check.
   " 코스트센터 입력시 관리영역(KOKRS)도 함께 체크 - 같은 오브젝트, 행 2개
   IF p_kostl IS NOT INITIAL.
     gt_check = VALUE #( BASE gt_check
-      ( xuobject = 'K_CSKS' xufield = 'KOKRS' value = 'SW00' ) ).
+      ( xuobject = 'K_CSKS' xufield = 'KOKRS' value = '1000' ) ).
   ENDIF.
 ENDFORM.
 
@@ -597,8 +599,8 @@ ENDFORM.</code></pre>
 <div class="tblwrap"><table>
   <tr><th>입력</th><th>내부(SIGN/OPTION/LOW/HIGH)</th><th>값 추출 가능?</th></tr>
   <tr><td>단일값 1000</td><td>I EQ 1000</td><td>가능</td></tr>
-  <tr><td>범위 1000~3140</td><td>I BT 1000 3140</td><td>불가. 사이에 존재하는 값을 알 수 없다</td></tr>
-  <tr><td>패턴 3*</td><td>I CP 3*</td><td>불가</td></tr>
+  <tr><td>범위 1000~2000</td><td>I BT 1000 2000</td><td>불가. 사이에 존재하는 값을 알 수 없다</td></tr>
+  <tr><td>패턴 2*</td><td>I CP 2*</td><td>불가</td></tr>
   <tr><td>제외 / 비움</td><td>E EQ ... / 빈 테이블</td><td>불가</td></tr>
 </table></div>
 <p>따라서 조회를 먼저 수행해 실존하는 값을 확보한 뒤 그 값들을 검사한다. 사용자가
@@ -905,7 +907,7 @@ ENDFORM.</code></pre>
 모두 통과하므로 차단 케이스를 검증할 수 없다. 제한된 테스트 계정으로 수행한다.</div>
 
 <h3>8-1. 테스트 계정 (SU01)</h3>
-<p>Dialog 사용자 1개(예: ZTEST01). 롤 외 권한 없음.</p>
+<p>Dialog 사용자 1개. 롤 외 권한 없음.</p>
 
 <figure class="shot">
   <img src="images/08_01_su01.png" alt="SU01 테스트 계정">
@@ -936,8 +938,8 @@ SE38은 실행 전에 S_DEVELOP(개발 권한)를 요구하므로 공통 모듈�
 <div class="tblwrap"><table>
   <tr><th>오브젝트</th><th>부여 값 예 ("한국 담당자" 페르소나)</th></tr>
   <tr><td>F_BKPF_BUK</td><td>BUKRS=1000, ACTVT=03</td></tr>
-  <tr><td>M_MATE_WRK</td><td>WERKS=3110, ACTVT=03</td></tr>
-  <tr><td>K_CSKS</td><td>KOKRS=SW00, KOSTL=KOC1*, ACTVT=03</td></tr>
+  <tr><td>M_MATE_WRK</td><td>WERKS=1010, ACTVT=03</td></tr>
+  <tr><td>K_CSKS</td><td>KOKRS=1000, KOSTL=CC1*, ACTVT=03</td></tr>
 </table></div>
 <p class="sub">ACTVT 값은 인스턴스 구성용이며 체크에 영향을 주지 않는다(원칙 5). 조직레벨($)
 필드는 Organizational levels 팝업에서 입력하며 롤 전체에 공통 적용된다.</p>
@@ -1026,8 +1028,7 @@ where-used는 후보 탐색 용도로 사용한다.</p>
 <!-- ================================================================ -->
 <h2 id="s12"><span class="no">12</span>소스코드</h2>
 
-<p>SED 시스템의 활성 버전을 그대로 옮긴 소스다. 본문의 코드는 설명을 위해 헤더와
-작성자 정보를 정리한 형태이므로, 시스템에 있는 그대로의 코드는 아래 파일에서 확인한다.
+<p>본문에 인용한 코드의 전체 소스다. 헤더와 조직 값은 예시로 정리했다.
 저장소는 <a href="https://github.com/Would-you-sap/ABAP/blob/main/auth-check/src/README.md">auth-check/src</a>에 있다.</p>
 
 <div class="tblwrap"><table>
@@ -1046,14 +1047,6 @@ where-used는 후보 탐색 용도로 사용한다.</p>
   <tr><td><a href="https://github.com/Would-you-sap/ABAP/blob/main/auth-check/src/TEXT_ELEMENTS.md">TEXT_ELEMENTS.md</a></td><td>텍스트 풀</td><td>&mdash;</td><td>텍스트 심볼, 선택화면 텍스트</td></tr>
   <tr><td><a href="https://github.com/Would-you-sap/ABAP/blob/main/auth-check/src/README.md">README.md</a></td><td>안내</td><td>&mdash;</td><td>생성 순서, 의존 오브젝트</td></tr>
 </table></div>
-
-<p class="sub">메시지 클래스 ZCMM01은 포함하지 않았다. 사용하는 번호(080·081·082와
-기존 재사용 057·033)와 EN/KO 텍스트는 README에 정리해 두었다. 권한 오브젝트
-F_BKPF_BUK, M_MATE_WRK, K_CSKS는 SAP 표준이라 별도 생성이 필요 없다.</p>
-
-<p class="sub">클래스에는 설계 검토 중 폐기한 GET_DEFAULT_OBJECT가 호출부 주석
-상태로 남아 있고, 데모5 build_check에도 주석 처리된 구버전 블록이 있다. 시스템
-상태를 그대로 옮긴 결과이며 신규 구축 시에는 생략해도 된다.</p>
 
 <div class="foot">
   CBO Program Authorization Check

@@ -30,7 +30,7 @@ FORM build_check.
   " 코스트센터 입력시 관리영역(KOKRS)도 함께 체크 - 같은 오브젝트, 행 2개
   IF p_kostl IS NOT INITIAL.
     gt_check = VALUE #( BASE gt_check
-      ( xuobject = 'K_CSKS' xufield = 'KOKRS' value = 'SW00' ) ).
+      ( xuobject = 'K_CSKS' xufield = 'KOKRS' value = '1000' ) ).
   ENDIF.
 
 *  " 이 프로그램이 체크할 필드+값만 구성 (입력된 축만 체크)
@@ -44,7 +44,7 @@ FORM build_check.
 *  " 코스트센터 입력시 관리영역(KOKRS)도 함께 체크
 *  IF p_kostl IS NOT INITIAL.
 *    gt_check = VALUE #( BASE gt_check
-*      ( xufield = 'KOKRS' value = 'SW00' ) ).
+*      ( xufield = 'KOKRS' value = '1000' ) ).
 *  ENDIF.
 
 ENDFORM.
