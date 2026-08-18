@@ -1,0 +1,9 @@
+@EndUserText.label : '[CM] CBO Authorization Check Request'
+@AbapCatalog.enhancement.category : #NOT_EXTENSIBLE
+define structure zcms0070 {
+
+  xuobject : xuobject;
+  xufield  : xufield;
+  value    : xuval;
+
+}

@@ -104,6 +104,7 @@
     <a href="#s09">09 테스트 시나리오</a>
     <a href="#s10">10 개발 규약</a>
     <a href="#s11">11 FAQ</a>
+    <a href="#s12">12 소스코드</a>
   </div>
 </nav>
 
@@ -1020,6 +1021,39 @@ where-used는 후보 탐색 용도로 사용한다.</p>
 <p><b>Q. 성능에 영향은 없나?</b><br>
 권한 체크는 로그인 시 메모리에 로드된 버퍼를 조회한다. 건별이 아닌 distinct 값
 단위로 검사하므로 데이터 건수와 무관하다.</p>
+
+
+<!-- ================================================================ -->
+<h2 id="s12"><span class="no">12</span>소스코드</h2>
+
+<p>SED 시스템의 활성 버전을 그대로 옮긴 소스다. 본문의 코드는 설명을 위해 헤더와
+작성자 정보를 정리한 형태이므로, 시스템에 있는 그대로의 코드는 아래 파일에서 확인한다.
+저장소는 <a href="https://github.com/Would-you-sap/ABAP/blob/main/auth-check/src/README.md">auth-check/src</a>에 있다.</p>
+
+<div class="tblwrap"><table>
+  <tr><th>오브젝트</th><th>유형</th><th>패키지</th><th>내용</th></tr>
+  <tr><td><a href="https://github.com/Would-you-sap/ABAP/blob/main/auth-check/src/ZCMS0070.tabl.txt">ZCMS0070</a></td><td>구조</td><td>ZCM00</td><td>체크 요청 1행 (오브젝트+필드+값)</td></tr>
+  <tr><td><a href="https://github.com/Would-you-sap/ABAP/blob/main/auth-check/src/ZCMS0070T.ttyp.md">ZCMS0070T</a></td><td>테이블 타입</td><td>ZCM00</td><td>체크 요청 목록</td></tr>
+  <tr><td><a href="https://github.com/Would-you-sap/ABAP/blob/main/auth-check/src/ZCMCL_AUTH_CHECK.clas.abap">ZCMCL_AUTH_CHECK</a></td><td>클래스</td><td>ZCM00</td><td>공통 권한 체크</td></tr>
+  <tr><td><a href="https://github.com/Would-you-sap/ABAP/blob/main/auth-check/src/YCM_AUTH_DEMO5.prog.abap">YCM_AUTH_DEMO5</a></td><td>프로그램</td><td>$TMP</td><td>데모 1 메인</td></tr>
+  <tr><td><a href="https://github.com/Would-you-sap/ABAP/blob/main/auth-check/src/YCM_AUTH_DEMO5_TOP.prog.abap">YCM_AUTH_DEMO5_TOP</a></td><td>인클루드</td><td>$TMP</td><td>전역 선언</td></tr>
+  <tr><td><a href="https://github.com/Would-you-sap/ABAP/blob/main/auth-check/src/YCM_AUTH_DEMO5_SCR.prog.abap">YCM_AUTH_DEMO5_SCR</a></td><td>인클루드</td><td>$TMP</td><td>선택화면</td></tr>
+  <tr><td><a href="https://github.com/Would-you-sap/ABAP/blob/main/auth-check/src/YCM_AUTH_DEMO5_F01.prog.abap">YCM_AUTH_DEMO5_F01</a></td><td>인클루드</td><td>$TMP</td><td>서브루틴</td></tr>
+  <tr><td><a href="https://github.com/Would-you-sap/ABAP/blob/main/auth-check/src/YCM_AUTH_DEMO6.prog.abap">YCM_AUTH_DEMO6</a></td><td>프로그램</td><td>$TMP</td><td>데모 2 메인</td></tr>
+  <tr><td><a href="https://github.com/Would-you-sap/ABAP/blob/main/auth-check/src/YCM_AUTH_DEMO6_TOP.prog.abap">YCM_AUTH_DEMO6_TOP</a></td><td>인클루드</td><td>$TMP</td><td>전역 선언</td></tr>
+  <tr><td><a href="https://github.com/Would-you-sap/ABAP/blob/main/auth-check/src/YCM_AUTH_DEMO6_SCR.prog.abap">YCM_AUTH_DEMO6_SCR</a></td><td>인클루드</td><td>$TMP</td><td>선택화면</td></tr>
+  <tr><td><a href="https://github.com/Would-you-sap/ABAP/blob/main/auth-check/src/YCM_AUTH_DEMO6_F01.prog.abap">YCM_AUTH_DEMO6_F01</a></td><td>인클루드</td><td>$TMP</td><td>서브루틴</td></tr>
+  <tr><td><a href="https://github.com/Would-you-sap/ABAP/blob/main/auth-check/src/TEXT_ELEMENTS.md">TEXT_ELEMENTS.md</a></td><td>텍스트 풀</td><td>&mdash;</td><td>텍스트 심볼, 선택화면 텍스트</td></tr>
+  <tr><td><a href="https://github.com/Would-you-sap/ABAP/blob/main/auth-check/src/README.md">README.md</a></td><td>안내</td><td>&mdash;</td><td>생성 순서, 의존 오브젝트</td></tr>
+</table></div>
+
+<p class="sub">메시지 클래스 ZCMM01은 포함하지 않았다. 사용하는 번호(080·081·082와
+기존 재사용 057·033)와 EN/KO 텍스트는 README에 정리해 두었다. 권한 오브젝트
+F_BKPF_BUK, M_MATE_WRK, K_CSKS는 SAP 표준이라 별도 생성이 필요 없다.</p>
+
+<p class="sub">클래스에는 설계 검토 중 폐기한 GET_DEFAULT_OBJECT가 호출부 주석
+상태로 남아 있고, 데모5 build_check에도 주석 처리된 구버전 블록이 있다. 시스템
+상태를 그대로 옮긴 결과이며 신규 구축 시에는 생략해도 된다.</p>
 
 <div class="foot">
   CBO Program Authorization Check
