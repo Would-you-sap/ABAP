@@ -105,9 +105,11 @@
     thead{display:table-header-group}
     td:first-child{white-space:normal}
 
-    /* 코드는 줄바꿈해 가로 잘림을 막는다 */
+    /* 코드는 줄바꿈해 가로 잘림을 막고, 페이지 경계에서 쪼개지지 않게 한다 */
     pre{font-size:8.6pt;line-height:1.5;padding:10px 12px;overflow:visible;
-        white-space:pre-wrap;word-break:break-word;break-inside:auto}
+        white-space:pre-wrap;word-break:break-word;break-inside:avoid}
+    /* 한 쪽을 넘는 블록만 분할을 허용한다 */
+    pre.brk{break-inside:auto}
     code{font-size:8.8pt}
 
     a{color:inherit;text-decoration:none}
@@ -752,7 +754,7 @@ SELECT-OPTIONS: s_bukrs FOR gv_bukrs,
 <h4>Include YCM_AUTH_DEMO6_F01</h4>
 <p class="sub">조회(get_data), 실존 값 추출과 요청 구성(build_check), 검사와 차단
 처리(check_authority), 결과 표시(display_result)로 구성한다.</p>
-<pre><code>*&amp;---------------------------------------------------------------------*
+<pre class="brk"><code>*&amp;---------------------------------------------------------------------*
 *&amp; Include YCM_AUTH_DEMO6_F01 - 서브루틴
 *&amp;---------------------------------------------------------------------*
 
