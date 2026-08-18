@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CBO 프로그램 권한체크 구현 가이드</title>
+<style>
+  :root{
+    --ink:#24292f; --sub:#57606a; --line:#d0d7de; --bg:#ffffff;
+    --soft:#f6f8fa; --accent:#0969da; --accent2:#953800;
+    --good:#1a7f37; --warn:#9a6700; --danger:#cf222e;
+    --mono:'Consolas','D2Coding','Courier New',monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:'Pretendard','Malgun Gothic','Apple SD Gothic Neo',sans-serif;
+    font-size:16px;line-height:1.75}
+  .wrap{max-width:880px;margin:0 auto;padding:48px 24px 100px}
+
+  header.doc h1{font-size:30px;margin:0 0 6px;line-height:1.3}
+  header.doc .lead{color:var(--sub);font-size:15px;margin-bottom:8px}
+  .badges{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 0}
+  .badge{font-size:12px;font-weight:600;padding:3px 10px;border-radius:12px;
+    background:var(--soft);border:1px solid var(--line);color:var(--sub)}
+
+  nav.toc{background:var(--soft);border:1px solid var(--line);border-radius:8px;
+    padding:18px 22px;margin:28px 0;font-size:14.5px}
+  nav.toc b{display:block;margin-bottom:10px}
+  nav.toc .toc-links{display:flex;flex-direction:column;gap:5px}
+  nav.toc a{color:var(--accent);text-decoration:none;width:fit-content}
+  nav.toc a:hover{text-decoration:underline}
+
+  h2{font-size:23px;margin:56px 0 12px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+  h2 .no{font-family:var(--mono);font-size:15px;color:var(--accent);margin-right:10px;font-weight:700}
+  h3{font-size:18px;margin:32px 0 8px}
+  h4{font-size:15.5px;margin:22px 0 6px}
+  p{margin:10px 0}
+  .sub{color:var(--sub);font-size:14px}
+  ul,ol{margin:8px 0;padding-left:24px}
+  li{margin:4px 0}
+
+  table{border-collapse:collapse;width:100%;font-size:14px;margin:0}
+  th{background:var(--soft);text-align:left;font-weight:600;white-space:nowrap;
+    border:1px solid var(--line);padding:9px 12px}
+  td{border:1px solid var(--line);padding:9px 12px;vertical-align:top;line-height:1.6}
+  td:first-child{white-space:nowrap}
+  .tblwrap{overflow-x:auto;margin:14px 0}
+  /* 번호 열이 첫 칸인 표는 좁게 */
+  table tr th:first-child{width:auto}
+
+  code{font-family:var(--mono);font-size:13px;background:var(--soft);
+    padding:2px 6px;border-radius:4px;border:1px solid var(--line)}
+  pre{background:var(--soft);border:1px solid var(--line);border-radius:8px;
+    padding:16px 18px;overflow-x:auto;font-family:var(--mono);font-size:13px;
+    line-height:1.6;margin:12px 0}
+  pre code{background:none;border:none;padding:0}
+
+  .callout{border:1px solid var(--line);border-left:4px solid var(--accent);
+    border-radius:6px;padding:12px 18px;margin:14px 0;font-size:14.5px;background:var(--soft)}
+  .callout.warn{border-left-color:var(--warn)}
+  .callout.danger{border-left-color:var(--danger)}
+  .callout b:first-child{display:block;margin-bottom:4px}
+
+  figure.shot{margin:18px 0;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  figure.shot img{display:block;width:100%;height:auto}
+  figure.shot figcaption{padding:8px 16px;font-size:13px;color:var(--sub);
+    background:var(--soft);border-top:1px solid var(--line)}
+
+  .diagram{border:1px solid var(--line);border-radius:8px;padding:24px 20px 0;margin:20px 0;
+    overflow-x:auto;background:#fff}
+  .diagram svg{display:block;margin:0 auto;max-width:100%;height:auto}
+  figure.diagram{margin:20px 0;padding:24px 20px 0}
+  figure.diagram figcaption{margin:14px -20px 0;padding:8px 20px;font-size:13px;
+    color:var(--sub);background:var(--soft);border-top:1px solid var(--line)}
+  .diagram + .callout{margin-top:14px}
+
+  .foot{margin-top:64px;padding-top:16px;border-top:1px solid var(--line);
+    font-size:13px;color:var(--sub)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="doc">
+  <h1>CBO 프로그램 권한체크 구현 가이드</h1>
+  <div class="lead">CBO 프로그램의 조직 단위 권한을 공통 클래스 호출로 검사한다.
+  표준 권한 오브젝트와 PFCG Role을 그대로 사용하며, 배경과 구현, 테스트를 차례로 다룬다.</div>
+  <div class="badges">
+    <span class="badge">ABAP</span><span class="badge">AUTHORITY-CHECK</span>
+  </div>
+</header>
+
+<nav class="toc">
+  <b>목차</b>
+  <div class="toc-links">
+    <a href="#s01">01 개요</a>
+    <a href="#s02">02 전체 프로세스</a>
+    <a href="#s03">03 기초 개념</a>
+    <a href="#s04">04 설계 원칙</a>
+    <a href="#s05">05 공통 모듈 구현</a>
+    <a href="#s06">06 데모 1 — 단일 파라미터</a>
+    <a href="#s07">07 데모 2 — 범위값</a>
+    <a href="#s08">08 테스트 환경</a>
+    <a href="#s09">09 테스트 시나리오</a>
+    <a href="#s10">10 개발 규약</a>
+    <a href="#s11">11 FAQ</a>
+  </div>
+</nav>
+
+<!-- ================================================================ -->
+<h2 id="s01"><span class="no">01</span>개요</h2>
+
+<p>표준 트랜잭션은 SAP이 권한 체크를 내장하고 있으나, CBO 프로그램은 개발자가 직접
+체크를 구현해야 한다. 프로그램별로 구현하면 방식이 통일되지 않고 누락이 발생하므로
+공통 모듈로 표준화한다.</p>
+
+<h3>확정된 요구</h3>
+<ol>
+  <li>사용자 Role에 부여된 값(예: 회사코드 1000)을 벗어난 조직 값 접근은 차단한다.</li>
+  <li>Role에는 <b>표준 권한 오브젝트</b>를 그대로 부여한다. 커스텀 오브젝트는 만들지 않는다.</li>
+  <li>CBO 프로그램이 체크할 것(오브젝트+필드+값, 1~N개)을 공통 모듈에 넘기고,
+    공통 모듈은 <b>넘긴 것만</b> 체크한다.</li>
+  <li>전달한 항목이 모두 통과해야 통과로 판정한다(AND). 실패 시 부족한 권한을 전부
+    반환한다. 사용자의 권한 신청 횟수를 줄이기 위한 것이다.</li>
+</ol>
+
+<h3>산출물</h3>
+<div class="tblwrap"><table>
+  <tr><th>구분</th><th>오브젝트 (본 문서 예시 채번)</th><th>비고</th></tr>
+  <tr><td>공통 클래스</td><td><code>ZCMCL_AUTH_CHECK</code></td><td>정적 메서드 CHECK</td></tr>
+  <tr><td>DDIC</td><td><code>ZCMS0070</code>(구조) / <code>ZCMS0070T</code>(테이블 타입)</td><td>체크 요청 목록</td></tr>
+  <tr><td>메시지</td><td><code>ZCMM01</code> 080/081/082 (+기존 057·033 재사용)</td><td>EN 원본 + KO 번역</td></tr>
+  <tr><td>참조 데모</td><td><code>YCM_AUTH_DEMO5</code>(단일값) / <code>YCM_AUTH_DEMO6</code>(범위값)</td><td>개발자 배포용</td></tr>
+  <tr><td>테스트 자산</td><td>테스트 계정 + 베이스 롤 + 권한 부여 롤</td><td>08장</td></tr>
+</table></div>
+
+<div class="callout"><b>타 프로젝트 적용 시</b>
+위 오브젝트명은 원 프로젝트의 채번 예시다. 이름만 해당 프로젝트 네이밍 표준으로
+바꾸고, 구성(컴포넌트·파라미터·소스 로직)은 그대로 쓰면 된다.</div>
+
+<!-- ================================================================ -->
+<h2 id="s02"><span class="no">02</span>전체 프로세스</h2>
+
+<p>CBO 프로그램이 체크 요청을 구성해 공통 클래스에 전달하면, 클래스가 사용자 권한
+버퍼(로그인 시 로드된 Role 값)와 대조해 판정을 반환한다. 허용 범위는 PFCG Role이
+결정한다.</p>
+
+<figure class="diagram">
+<svg viewBox="0 0 860 620" xmlns="http://www.w3.org/2000/svg" role="img"
+     aria-label="CBO 프로그램이 체크 요청을 구성해 공통 클래스에 전달하고, 클래스가 PFCG Role 권한 버퍼와 대조해 통과 또는 차단을 판정하는 흐름"
+     font-family="'Pretendard','Malgun Gothic',sans-serif" font-size="13.5">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#8a8f96"/>
+    </marker>
+  </defs>
+
+  <!-- 그룹: 사용자 -->
+  <rect x="40" y="20" width="260" height="92" rx="4" fill="#faf9f6" stroke="#a8a094"/>
+  <text x="170" y="42" text-anchor="middle" font-size="12.5" font-weight="700" fill="#5d5445">사용자</text>
+  <rect x="70" y="54" width="200" height="42" rx="3" fill="#ffffff" stroke="#a8a094"/>
+  <text x="170" y="80" text-anchor="middle">T-code 실행 · 값 입력</text>
+
+  <!-- 그룹: PFCG -->
+  <rect x="560" y="20" width="260" height="152" rx="4" fill="#faf9f6" stroke="#a8a094"/>
+  <text x="690" y="42" text-anchor="middle" font-size="12.5" font-weight="700" fill="#5d5445">PFCG (권한팀)</text>
+  <rect x="590" y="54" width="200" height="40" rx="3" fill="#e8f0e9" stroke="#4a7a55"/>
+  <text x="690" y="79" text-anchor="middle">Role · 표준 오브젝트 값</text>
+  <line x1="690" y1="94" x2="690" y2="114" stroke="#8a8f96" marker-end="url(#ar)"/>
+  <rect x="590" y="116" width="200" height="42" rx="3" fill="#e8f0e9" stroke="#4a7a55"/>
+  <text x="690" y="134" text-anchor="middle">권한 버퍼</text>
+  <text x="690" y="151" text-anchor="middle" font-size="11.5" fill="#57606a">로그인 시 로드</text>
+
+  <!-- 그룹: CBO 프로그램 -->
+  <rect x="40" y="152" width="300" height="440" rx="4" fill="#fbfcfd" stroke="#6b7280"/>
+  <text x="58" y="174" font-size="12.5" font-weight="700" fill="#3d4653">CBO 프로그램</text>
+  <rect x="65" y="190" width="250" height="54" rx="3" fill="#eaf1f8" stroke="#33608c"/>
+  <text x="190" y="212" text-anchor="middle">선택화면 검증</text>
+  <text x="190" y="230" text-anchor="middle" font-size="11.5" fill="#57606a">OBLIGATORY · AT SELECTION-SCREEN</text>
+  <rect x="65" y="277" width="250" height="54" rx="3" fill="#eaf1f8" stroke="#33608c"/>
+  <text x="190" y="299" text-anchor="middle">체크 요청 구성</text>
+  <text x="190" y="317" text-anchor="middle" font-size="11.5" fill="#57606a">오브젝트 + 필드 + 값</text>
+  <rect x="65" y="420" width="250" height="54" rx="3" fill="#e8f0e9" stroke="#4a7a55"/>
+  <text x="190" y="442" text-anchor="middle">본 처리 진행</text>
+  <text x="190" y="460" text-anchor="middle" font-size="11.5" fill="#57606a">권한 통과자만 도달</text>
+  <rect x="65" y="510" width="250" height="54" rx="3" fill="#fbe9e7" stroke="#cf222e"/>
+  <text x="190" y="532" text-anchor="middle">MESSAGE E · 실행 중단</text>
+  <text x="190" y="550" text-anchor="middle" font-size="11.5" fill="#57606a">중단 책임은 프로그램</text>
+
+  <!-- 그룹: 공통 클래스 -->
+  <rect x="420" y="238" width="400" height="354" rx="4" fill="#fffdf8" stroke="#b08968"/>
+  <text x="438" y="260" font-size="12.5" font-weight="700" fill="#7a5d3e">공통 클래스 ZCMCL_AUTH_CHECK</text>
+  <rect x="445" y="277" width="350" height="54" rx="3" fill="#fdf3e4" stroke="#b08968"/>
+  <text x="620" y="299" text-anchor="middle">행별 AUTHORITY-CHECK</text>
+  <text x="620" y="317" text-anchor="middle" font-size="11.5" fill="#57606a">값 일치만 비교 · ACTVT 미검사</text>
+  <polygon points="620,364 712,404 620,444 528,404" fill="#fdf3e4" stroke="#c58940"/>
+  <text x="620" y="400" text-anchor="middle">전부 통과?</text>
+  <text x="620" y="418" text-anchor="middle" font-size="11.5" fill="#57606a">AND 판정</text>
+  <rect x="470" y="510" width="300" height="54" rx="3" fill="#fdf3e4" stroke="#b08968"/>
+  <text x="620" y="532" text-anchor="middle">ES_RETURN = E · 메시지 조립</text>
+  <text x="620" y="550" text-anchor="middle" font-size="11.5" fill="#57606a">ET_FAILED = 부족 권한 전량</text>
+
+  <!-- 흐름 -->
+  <line x1="170" y1="112" x2="170" y2="188" stroke="#8a8f96" marker-end="url(#ar)"/>
+  <text x="180" y="136" font-size="11.5" fill="#57606a">SA38 · T-code</text>
+
+  <line x1="190" y1="244" x2="190" y2="275" stroke="#8a8f96" marker-end="url(#ar)"/>
+
+  <line x1="317" y1="304" x2="443" y2="304" stroke="#8a8f96" marker-end="url(#ar)"/>
+  <text x="380" y="296" text-anchor="middle" font-size="11.5" fill="#57606a">CHECK( it_check )</text>
+
+  <line x1="690" y1="158" x2="690" y2="275" stroke="#8a8f96" marker-end="url(#ar)"/>
+  <text x="700" y="216" font-size="11.5" fill="#57606a">값 대조</text>
+
+  <line x1="620" y1="331" x2="620" y2="362" stroke="#8a8f96" marker-end="url(#ar)"/>
+
+  <polyline points="528,404 190,404 190,418" fill="none" stroke="#8a8f96" marker-end="url(#ar)"/>
+  <text x="360" y="396" text-anchor="middle" font-size="11.5" fill="#1a7f37">S · 전부 통과</text>
+
+  <line x1="620" y1="444" x2="620" y2="508" stroke="#8a8f96" marker-end="url(#ar)"/>
+  <text x="630" y="480" font-size="11.5" fill="#cf222e">E · 하나라도 실패</text>
+
+  <line x1="468" y1="537" x2="317" y2="537" stroke="#8a8f96" marker-end="url(#ar)"/>
+  <text x="392" y="529" text-anchor="middle" font-size="11.5" fill="#57606a">상태 · 메시지 리턴</text>
+</svg>
+<figcaption>체크 요청 구성부터 판정, 분기까지의 흐름. 허용 범위는 PFCG Role이, 중단 여부는 호출 프로그램이 결정한다</figcaption>
+</figure>
+
+<div class="callout"><b>역할 분담</b>
+프로그램은 검사 대상(오브젝트+필드+값) 결정과 거부 시 중단을 담당한다. 공통 클래스는
+검사, 판정, 메시지 조립을 담당한다. 허용 범위는 Role이 결정한다. 범위(SELECT-OPTIONS)
+화면은 이 흐름 앞에 조회로 실존 값을 확보하는 단계가 추가된다(07장).</div>
+
+<!-- ================================================================ -->
+<h2 id="s03"><span class="no">03</span>기초 개념</h2>
+
+<p>모든 구현의 바탕은 ABAP 문장 하나다:</p>
+
+<pre><code>AUTHORITY-CHECK OBJECT 'F_BKPF_BUK'
+  ID 'BUKRS' FIELD '1000'.</code></pre>
+
+<p>로그인한 사용자의 권한 버퍼에 해당 오브젝트의 값 조합이 있는지 확인한다.
+<code>sy-subrc</code>가 0이면 허용, 그 외는 거부다.</p>
+
+<div class="tblwrap"><table>
+  <tr><th>구성요소</th><th>역할</th></tr>
+  <tr><td>권한 오브젝트 (SU21)</td><td>검사할 필드(BUKRS, ACTVT 등)를 정의한다. 값은 갖지 않는다</td></tr>
+  <tr><td>Role (PFCG)</td><td>오브젝트에 허용 값을 채워 사용자에게 배정한다</td></tr>
+  <tr><td>권한 버퍼</td><td>배정된 롤의 값이 로그인 시점에 메모리로 로드된 상태다</td></tr>
+</table></div>
+
+<p>실무상 유의할 점은 다음 세 가지다.</p>
+<ul>
+  <li>롤 변경 후에는 재로그인이 필요하다. 체크는 DB가 아닌 버퍼를 참조한다.</li>
+  <li>롤 값에 <code>KOC1*</code>과 같은 패턴을 부여할 수 있으며, 체크 시점에 매치된다.</li>
+  <li>AUTHORITY-CHECK에 지정하지 않은 필드는 검사되지 않는다. 오브젝트에 필드가
+    3개여도 지정한 필드만 비교한다.</li>
+</ul>
+
+<div class="tblwrap"><table>
+  <tr><th>구분</th><th>결정 대상</th><th>담당</th></tr>
+  <tr><td>실행 통제</td><td>프로그램(T-code) 실행 가능 여부</td><td>PFCG S_TCODE. 본 모듈 범위 밖이다</td></tr>
+  <tr><td>값 조달</td><td>체크할 값의 출처</td><td>화면 입력</td></tr>
+  <tr><td>기준 결정</td><td>검사에 사용할 오브젝트와 필드</td><td>CBO 프로그램이 코드에 명시한다</td></tr>
+  <tr><td>허용 범위</td><td>통과와 거부의 판정 기준</td><td>PFCG Role</td></tr>
+</table></div>
+
+<div class="callout warn"><b>유저 파라미터는 권한 통제 수단이 아니다</b>
+파라미터 ID(BUK 등)는 화면 기본값 기능이며 사용자가 SU3에서 변경할 수 있다.
+값을 조달하는 용도로는 사용할 수 있으나, 판정은 AUTHORITY-CHECK로 수행한다.</div>
+
+<!-- ================================================================ -->
+<h2 id="s04"><span class="no">04</span>설계 원칙</h2>
+
+
+<div class="tblwrap"><table>
+  <tr><th>#</th><th>원칙</th></tr>
+  <tr><td>1</td><td>실행 통제는 PFCG의 T-code 부여(S_TCODE)로 처리한다</td></tr>
+  <tr><td>2</td><td>조직 권한은 표준 오브젝트를 Role에 직접 부여한다</td></tr>
+  <tr><td>3</td><td>체크 대상(오브젝트, 필드, 값)은 프로그램이 결정해 전달한다</td></tr>
+  <tr><td>4</td><td>AND로 판정하고 실패 항목을 전량 반환한다(BAPIRET2와 상세 목록)</td></tr>
+  <tr><td>5</td><td>ACTVT는 검사하지 않고 필드 값 일치만 비교한다</td></tr>
+  <tr><td>6</td><td>공통 모듈은 전역 클래스의 정적 메서드로 구현한다</td></tr>
+  <tr><td>7</td><td>거부 시 중단(MESSAGE E)은 호출 프로그램이 수행한다</td></tr>
+  <tr><td>8</td><td>텍스트는 EN을 원본으로 하고 KO 번역을 등록한다</td></tr>
+</table></div>
+
+<!-- ================================================================ -->
+<h2 id="s05"><span class="no">05</span>공통 모듈 구현</h2>
+
+<h3>5-1. SE11 — 구조 ZCMS0070</h3>
+<p>체크 요청 한 건은 "어떤 오브젝트의 어떤 필드를 어떤 값으로 검사할지" 세 항목의
+묶음이다. 이를 딕셔너리 구조로 정의해 두면 호출 프로그램과 공통 클래스가 같은
+타입으로 데이터를 주고받을 수 있고, 프로그램마다 임의의 구조를 선언하는 일이 없다.
+컴포넌트는 표준 Data Element를 참조하므로 AUTHORITY-CHECK에 전달하는 값의 타입과
+길이가 어긋나지 않는다.</p>
+<ul>
+  <li>Data type → Structure. Description EN <code>[CM] CBO Authorization Check Request</code>
+    / KO <code>[CM] CBO 권한체크 요청</code></li>
+  <li>Components (표준 Data Element 재사용):</li>
+</ul>
+<div class="tblwrap"><table>
+  <tr><th>Component</th><th>Type</th><th>의미</th></tr>
+  <tr><td>XUOBJECT</td><td>XUOBJECT</td><td>권한 오브젝트</td></tr>
+  <tr><td>XUFIELD</td><td>XUFIELD</td><td>권한 필드</td></tr>
+  <tr><td>VALUE</td><td>XUVAL</td><td>체크할 값</td></tr>
+</table></div>
+
+<figure class="shot">
+  <img src="images/05_01_se11_structure.png" alt="SE11 구조 ZCMS0070">
+  <figcaption>구조 ZCMS0070. 체크 요청 1행의 형태</figcaption>
+</figure>
+
+<h3>5-2. SE11 — 테이블 타입 ZCMS0070T</h3>
+<p>체크 요청은 1건일 수도 있고 여러 건일 수도 있으므로 내부 테이블로 전달한다.
+클래스 메서드의 파라미터에는 프로그램 로컬 타입을 지정할 수 없고 딕셔너리 타입이
+필요하기 때문에 테이블 타입을 별도로 만든다. 실패 목록을 반환하는 ET_FAILED도
+같은 구조이므로 이 타입을 함께 사용한다.</p>
+<p>Table Type, Line Type = ZCMS0070, Standard Table.
+EN <code>[CM] CBO Authorization Check Request List</code> / KO <code>[CM] CBO 권한체크 요청 목록</code>.</p>
+
+<figure class="shot">
+  <img src="images/05_02_se11_tabletype.png" alt="SE11 테이블 타입 ZCMS0070T">
+  <figcaption>테이블 타입 ZCMS0070T</figcaption>
+</figure>
+
+<h3>5-3. SE91 — 메시지</h3>
+<div class="tblwrap"><table>
+  <tr><th>No.</th><th>EN (원본)</th><th>KO (번역)</th><th>용도</th></tr>
+  <tr><td>080</td><td>No authorization for organizational unit &amp;1</td><td>조직 단위 &amp;1에 대한 권한이 없습니다</td><td>실패 1건</td></tr>
+  <tr><td>081</td><td>No authorization for organizational unit &amp;1 and &amp;2 more</td><td>조직 단위 &amp;1 외 &amp;2건에 대한 권한이 없습니다</td><td>실패 복수</td></tr>
+  <tr><td>082</td><td>No authorized data found</td><td>권한이 있는 데이터가 없습니다</td><td>필터링형 전량 제거</td></tr>
+</table></div>
+<p class="sub">필수 입력(057)과 조회 결과 없음(033)은 프로젝트의 기존 메시지를 재사용한다.
+EN 로그온 상태에서 원본을 입력한 뒤 Goto → Translation에서 KO를 등록한다.</p>
+
+<figure class="shot">
+  <img src="images/05_03_se91_messages.png" alt="SE91 메시지 080~082">
+  <figcaption>메시지 080(단건), 081(복수), 082(필터링)</figcaption>
+</figure>
+
+<h3>5-4. SE24 — 클래스 ZCMCL_AUTH_CHECK</h3>
+<p>Class / Public / Final. Description EN <code>[CM] CBO Authorization Check Common Module</code>
+/ KO <code>[CM] CBO 권한체크 공통모듈</code>.</p>
+
+<h4>메서드 · 파라미터</h4>
+<div class="tblwrap"><table>
+  <tr><th>Method</th><th>Level</th><th>Visibility</th></tr>
+  <tr><td>CHECK</td><td>Static Method</td><td>Public</td></tr>
+</table></div>
+<div class="tblwrap"><table>
+  <tr><th>Parameter</th><th>구분</th><th>Type</th><th>Pass Value</th><th>Description</th></tr>
+  <tr><td>IT_CHECK</td><td>Importing</td><td>ZCMS0070T</td><td>☐</td><td>체크 요청 목록(오브젝트+필드+값)</td></tr>
+  <tr><td>ES_RETURN</td><td>Exporting</td><td>BAPIRET2</td><td>☑</td><td>결과(TYPE=S/E, MESSAGE=완성 문구)</td></tr>
+  <tr><td>ET_FAILED</td><td>Exporting</td><td>ZCMS0070T</td><td>☑</td><td>실패 목록 전량. 필요시만 수신한다</td></tr>
+</table></div>
+
+<figure class="shot">
+  <img src="images/05_04_se24_params.png" alt="SE24 파라미터">
+  <figcaption>CHECK 파라미터. Exporting 2개는 Pass Value 체크</figcaption>
+</figure>
+
+<h4>소스 전문 (METHOD ~ ENDMETHOD 사이)</h4>
+<div class="callout danger"><b>입력 위치</b>
+이 소스는 SE24 메서드 편집기에 입력한다. 클래스나 FM 편집기에 REPORT 코드를
+입력하면 "Each ABAP program can contain only one REPORT..." 오류가 발생한다.</div>
+
+<pre><code>    CLEAR: es_return, et_failed.
+
+    " 전달된 전 행을 끝까지 체크, 실패는 모아서 전량 리턴
+    LOOP AT it_check INTO DATA(ls_check).
+
+      " 오브젝트/필드/값 누락 행은 실패로 계산 (fail-closed)
+      IF ls_check-xuobject IS INITIAL
+         OR ls_check-xufield IS INITIAL
+         OR ls_check-value IS INITIAL.
+        APPEND ls_check TO et_failed.
+        CONTINUE.
+      ENDIF.
+
+      " 필드 값만 비교 - ACTVT 등 미지정 필드는 검사되지 않음
+      AUTHORITY-CHECK OBJECT ls_check-xuobject
+        ID ls_check-xufield FIELD ls_check-value.
+
+      IF sy-subrc &lt;&gt; 0.
+        APPEND ls_check TO et_failed.
+      ENDIF.
+
+    ENDLOOP.
+
+    DATA(lv_cnt) = lines( et_failed ).
+    IF lv_cnt = 0.
+      es_return-type = 'S'.
+      RETURN.
+    ENDIF.
+
+    " 실패: 상태 E + 표준 메시지 조립 (단건 080 / 복수 081)
+    " MESSAGE ... INTO는 화면 출력 없이 로그온 언어의 텍스트로 조립됨
+    es_return-type = 'E'.
+    es_return-id   = 'ZCMM01'.
+    DATA(ls_first) = et_failed[ 1 ].
+    DATA(lv_v1)    = CONV symsgv( |{ ls_first-xufield } { ls_first-value }| ).
+    IF lv_cnt = 1.
+      es_return-number     = '080'.
+      es_return-message_v1 = lv_v1.
+      MESSAGE ID 'ZCMM01' TYPE 'E' NUMBER '080'
+        WITH lv_v1 INTO es_return-message.
+    ELSE.
+      es_return-number     = '081'.
+      DATA(lv_rest)        = lv_cnt - 1.
+      es_return-message_v1 = lv_v1.
+      es_return-message_v2 = lv_rest.
+      MESSAGE ID 'ZCMM01' TYPE 'E' NUMBER '081'
+        WITH lv_v1 lv_rest INTO es_return-message.
+    ENDIF.</code></pre>
+
+<div class="callout"><b>설계 근거</b>
+<ul style="margin:4px 0">
+<li>첫 실패에서 중단하지 않고 전량 검사한다. 중단하면 사용자가 권한 신청을 반복하게
+되며, 권한 체크는 버퍼 조회이므로 전량 수행 비용이 크지 않다.</li>
+<li>오브젝트, 필드, 값이 누락된 행은 실패로 처리한다(fail-closed).</li>
+<li>MESSAGE ... WITH에는 산술식을 사용할 수 없으므로 <code>lv_cnt - 1</code>을
+변수에 담아 전달한다.</li>
+</ul></div>
+
+<figure class="shot">
+  <img src="images/05_05_se24_source.png" alt="SE24 소스">
+  <figcaption>CHECK 메서드 소스. Implemented / Active 상태</figcaption>
+</figure>
+
+<!-- ================================================================ -->
+<h2 id="s06"><span class="no">06</span>데모 1 — 단일 파라미터 진입 차단형 (YCM_AUTH_DEMO5)</h2>
+
+<p>실 CBO에 적용할 표준 형태다. Main + _TOP + _SCR + _F01 인클루드 구조를 사용한다.
+오브젝트 조합은 업무 문맥에 따른 예시다. 회사코드는 F_BKPF_BUK(회계전표), 플랜트는
+M_MATE_WRK(자재마스터), 코스트센터와 관리영역은 K_CSKS를 사용한다.</p>
+
+<h3>구성</h3>
+<h4>메인 프로그램</h4>
+<p class="sub">인클루드 세 개를 읽어들이고, 체크 요청 구성부터 결과 표시까지 서브루틴을
+순서대로 호출한다.</p>
+<pre><code>*&amp;--------------------------------------------------------------------*
+*&amp; Module      : CM
+*&amp; Program ID  : YCM_AUTH_DEMO5
+*&amp; Title       : CBO Authorization Check - Reference Program
+*&amp; Author      : (작성자)
+*&amp; Create Date : (작성일)
+*&amp;--------------------------------------------------------------------*
+*&amp; MODIFICATION LOG
+*&amp;--------------------------------------------------------------------*
+*&amp; No.  Date.        Author.  Description.
+*&amp;--------------------------------------------------------------------*
+*&amp; 001  (일자)       (ID)     Initial Coding
+*&amp;--------------------------------------------------------------------*
+REPORT ycm_auth_demo5.
+
+INCLUDE ycm_auth_demo5_top.
+INCLUDE ycm_auth_demo5_scr.
+INCLUDE ycm_auth_demo5_f01.
+
+START-OF-SELECTION.
+
+  PERFORM build_check.
+  PERFORM check_authority.
+  PERFORM display_result.</code></pre>
+
+<h4>Include YCM_AUTH_DEMO5_TOP</h4>
+<p class="sub">체크 요청과 결과를 담을 전역 변수를 선언한다. 요청과 실패 목록은 공통
+클래스 파라미터와 같은 테이블 타입을 쓰고, 결과는 BAPIRET2로 받는다.</p>
+<pre><code>*&amp;---------------------------------------------------------------------*
+*&amp; Include YCM_AUTH_DEMO5_TOP - 전역 선언
+*&amp;---------------------------------------------------------------------*
+
+DATA: gt_check  TYPE zcms0070t,
+      gt_failed TYPE zcms0070t,
+      gs_return TYPE bapiret2.</code></pre>
+
+<h4>Include YCM_AUTH_DEMO5_SCR</h4>
+<p class="sub">조직 값을 입력받는 파라미터를 선언한다. 회사코드는 OBLIGATORY로 화면에서
+강제하고, AT SELECTION-SCREEN에서 한 번 더 검증한다.</p>
+<pre><code>*&amp;---------------------------------------------------------------------*
+*&amp; Include YCM_AUTH_DEMO5_SCR - 선택화면
+*&amp;---------------------------------------------------------------------*
+
+PARAMETERS: p_bukrs TYPE bukrs OBLIGATORY,
+            p_werks TYPE werks_d,
+            p_kostl TYPE kostl.
+
+AT SELECTION-SCREEN.
+  PERFORM check_required.</code></pre>
+
+<h4>Include YCM_AUTH_DEMO5_F01</h4>
+<p class="sub">필수값 검증, 체크 요청 구성, 공통 클래스 호출, 결과 표시를 서브루틴으로
+나눈다. 실 CBO에서는 display_result 대신 결과가 E일 때 MESSAGE E로 중단한다.</p>
+<pre><code>*&amp;---------------------------------------------------------------------*
+*&amp; Include YCM_AUTH_DEMO5_F01 - 서브루틴
+*&amp;---------------------------------------------------------------------*
+
+
+FORM check_required.
+  " 화면 검증 + SUBMIT 우회 방어 (AT SELECTION-SCREEN은 SUBMIT에서도 실행됨)
+  IF p_bukrs IS INITIAL.
+    MESSAGE e057(zcmm01) WITH TEXT-f01.
+  ENDIF.
+ENDFORM.
+
+FORM build_check.
+  " 이 프로그램이 체크할 오브젝트+필드+값을 직접 구성 (입력된 축만 체크)
+  gt_check = VALUE #(
+    ( xuobject = 'F_BKPF_BUK' xufield = 'BUKRS' value = CONV #( p_bukrs ) )
+    ( xuobject = 'M_MATE_WRK' xufield = 'WERKS' value = CONV #( p_werks ) )
+    ( xuobject = 'K_CSKS'     xufield = 'KOSTL' value = CONV #( p_kostl ) ) ).
+  DELETE gt_check WHERE value IS INITIAL.
+
+  " 코스트센터 입력시 관리영역(KOKRS)도 함께 체크 - 같은 오브젝트, 행 2개
+  IF p_kostl IS NOT INITIAL.
+    gt_check = VALUE #( BASE gt_check
+      ( xuobject = 'K_CSKS' xufield = 'KOKRS' value = 'SW00' ) ).
+  ENDIF.
+ENDFORM.
+
+FORM check_authority.
+  " 공통 클래스 호출 - 상세 목록(et_failed)은 표시용, 차단형은 수신 생략 가능
+  zcmcl_auth_check=>check(
+    EXPORTING it_check  = gt_check
+    IMPORTING es_return = gs_return
+              et_failed = gt_failed ).
+ENDFORM.
+
+FORM display_result.
+  IF gs_return-type = 'S'.
+    WRITE: / TEXT-t01, '-', sy-uname.
+    LOOP AT gt_check INTO DATA(ls_check).
+      WRITE: / ' ', TEXT-t03, ls_check-xuobject, ls_check-xufield,
+               ls_check-value.
+    ENDLOOP.
+    RETURN.
+  ENDIF.
+
+  " 실패: 상세는 et_failed, 메시지는 클래스가 조립한 것 그대로
+  " 실전 차단형은 목록 없이 MESSAGE gs_return-message TYPE 'E' 한 줄
+  WRITE: / TEXT-t02, lines( gt_failed ), '-', sy-uname.
+  LOOP AT gt_failed INTO DATA(ls_fail).
+    WRITE: / ' ', TEXT-t04, ls_fail-xuobject, ls_fail-xufield,
+             ls_fail-value.
+  ENDLOOP.
+
+  MESSAGE gs_return-message TYPE 'S' DISPLAY LIKE 'E'.
+ENDFORM.</code></pre>
+
+<h3>Text Elements (EN 원본 → KO 번역)</h3>
+<div class="tblwrap"><table>
+  <tr><th>구분</th><th>항목</th><th>EN</th><th>KO</th></tr>
+  <tr><td>Text Symbol</td><td>F01</td><td>Company Code</td><td>회사코드</td></tr>
+  <tr><td>Text Symbol</td><td>T01</td><td>Authorization check passed</td><td>권한 체크 통과</td></tr>
+  <tr><td>Text Symbol</td><td>T02</td><td>Missing authorizations:</td><td>권한 부족:</td></tr>
+  <tr><td>Text Symbol</td><td>T03 / T04</td><td>OK : / MISS:</td><td>통과: / 부족:</td></tr>
+  <tr><td>Selection Text</td><td>P_BUKRS / P_WERKS / P_KOSTL</td><td>Company Code / Plant / Cost Center</td><td>회사코드 / 플랜트 / 코스트센터</td></tr>
+</table></div>
+
+<h3>실행 결과</h3>
+
+<figure class="shot">
+  <img src="images/06_01_demo5_screen.png" alt="데모5 선택화면">
+  <figcaption>선택화면. 회사코드는 OBLIGATORY</figcaption>
+</figure>
+
+<figure class="shot">
+  <img src="images/06_02_demo5_pass.png" alt="데모5 통과">
+  <figcaption>통과 시 화면(EN 로그온). 검사된 행이 전부 표시된다. 코스트센터를 입력하면 KOKRS가 함께 검사된다</figcaption>
+</figure>
+
+<figure class="shot">
+  <img src="images/06_03_demo5_block.png" alt="데모5 차단">
+  <figcaption>차단 시 화면(EN 로그온). 부족 권한 2건과 "and 1 more" 메시지</figcaption>
+</figure>
+
+<figure class="shot">
+  <img src="images/06_04_su53.png" alt="SU53">
+  <figcaption>SU53. 실패 원인 확인용이며 마지막 1건만 표시된다</figcaption>
+</figure>
+
+<h3>실전 적용 최소형</h3>
+<pre><code>  PERFORM build_check.
+  zcmcl_auth_check=&gt;check( EXPORTING it_check  = gt_check
+                           IMPORTING es_return = gs_return ).
+  IF gs_return-type = 'E'.
+    MESSAGE gs_return-message TYPE 'E'.   " 진입 차단
+  ENDIF.
+  " 이하 본 처리 - 권한 통과자만 도달</code></pre>
+
+<!-- ================================================================ -->
+<h2 id="s07"><span class="no">07</span>데모 2 — 범위값 SELECT-OPTIONS 차단형 (YCM_AUTH_DEMO6)</h2>
+
+<h3>범위는 값이 아니라 조건이다</h3>
+<div class="tblwrap"><table>
+  <tr><th>입력</th><th>내부(SIGN/OPTION/LOW/HIGH)</th><th>값 추출 가능?</th></tr>
+  <tr><td>단일값 1000</td><td>I EQ 1000</td><td>가능</td></tr>
+  <tr><td>범위 1000~3140</td><td>I BT 1000 3140</td><td>불가. 사이에 존재하는 값을 알 수 없다</td></tr>
+  <tr><td>패턴 3*</td><td>I CP 3*</td><td>불가</td></tr>
+  <tr><td>제외 / 비움</td><td>E EQ ... / 빈 테이블</td><td>불가</td></tr>
+</table></div>
+<p>따라서 조회를 먼저 수행해 실존하는 값을 확보한 뒤 그 값들을 검사한다. 사용자가
+조건을 어떻게 조합하더라도(BT, CP, E) 검사 대상은 실존 값으로 한정된다.</p>
+
+<figure class="diagram">
+<svg viewBox="0 0 820 150" xmlns="http://www.w3.org/2000/svg" role="img"
+     aria-label="SELECT-OPTIONS 조건에서 조회로 실존 값을 확보한 뒤 distinct 값만 한 번에 체크하는 흐름"
+     font-family="'Pretendard','Malgun Gothic',sans-serif" font-size="14">
+  <defs>
+    <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#8a8f96"/>
+    </marker>
+  </defs>
+
+  <rect x="20" y="34" width="170" height="62" rx="4" fill="#eaf1f8" stroke="#33608c"/>
+  <text x="105" y="58" text-anchor="middle">SELECT-OPTIONS</text>
+  <text x="105" y="78" text-anchor="middle" font-size="11.5" fill="#57606a">조건 (값 아님)</text>
+
+  <rect x="230" y="34" width="170" height="62" rx="4" fill="#eaf1f8" stroke="#33608c"/>
+  <text x="315" y="58" text-anchor="middle">조회 (WHERE IN)</text>
+  <text x="315" y="78" text-anchor="middle" font-size="11.5" fill="#57606a">입력한 축만</text>
+
+  <rect x="440" y="34" width="170" height="62" rx="4" fill="#eaf1f8" stroke="#33608c"/>
+  <text x="525" y="58" text-anchor="middle">distinct 값 추출</text>
+  <text x="525" y="78" text-anchor="middle" font-size="11.5" fill="#57606a">실존 값 = 검사 대상</text>
+
+  <rect x="650" y="34" width="150" height="62" rx="4" fill="#fdf3e4" stroke="#b08968"/>
+  <text x="725" y="58" text-anchor="middle">CHECK 1회</text>
+  <text x="725" y="78" text-anchor="middle" font-size="11.5" fill="#57606a">값 종류 수만큼</text>
+
+  <line x1="190" y1="65" x2="228" y2="65" stroke="#8a8f96" marker-end="url(#ar2)"/>
+  <line x1="400" y1="65" x2="438" y2="65" stroke="#8a8f96" marker-end="url(#ar2)"/>
+  <line x1="610" y1="65" x2="648" y2="65" stroke="#8a8f96" marker-end="url(#ar2)"/>
+</svg>
+<figcaption>범위 조건은 조회를 거쳐 실존 값으로 바뀐 뒤 검사된다. 거부 시 차단형은 전체를 거부하고(es_return), 필터링형은 불허 값의 데이터만 제거한다(et_failed)</figcaption>
+</figure>
+
+<h3>구성</h3>
+<h4>메인 프로그램</h4>
+<p class="sub">조회로 실존 값을 확보한 뒤 체크 요청을 구성해 검사한다. 결과가 S일 때만
+결과를 표시한다.</p>
+<pre><code>*&amp;--------------------------------------------------------------------*
+*&amp; Module      : CM
+*&amp; Program ID  : YCM_AUTH_DEMO6
+*&amp; Title       : CBO Authorization Check - Range Input Reference
+*&amp; Author      : (작성자)
+*&amp; Create Date : (작성일)
+*&amp;--------------------------------------------------------------------*
+*&amp; MODIFICATION LOG
+*&amp;--------------------------------------------------------------------*
+*&amp; No.  Date.        Author.  Description.
+*&amp;--------------------------------------------------------------------*
+*&amp; 001  (일자)       (ID)     Initial Coding
+*&amp;--------------------------------------------------------------------*
+REPORT ycm_auth_demo6.
+
+INCLUDE ycm_auth_demo6_top.
+INCLUDE ycm_auth_demo6_scr.
+INCLUDE ycm_auth_demo6_f01.
+
+START-OF-SELECTION.
+
+  PERFORM get_data.
+  PERFORM build_check.
+  PERFORM check_authority.
+  IF gs_return-type = 'S'.
+    PERFORM display_result.
+  ENDIF.</code></pre>
+
+<h4>Include YCM_AUTH_DEMO6_TOP</h4>
+<p class="sub">축별 조회 결과를 담을 타입과 변수를 선언한다. SELECT-OPTIONS의 참조
+변수(gv_*)도 여기서 선언한다.</p>
+<pre><code>*&amp;---------------------------------------------------------------------*
+*&amp; Include YCM_AUTH_DEMO6_TOP - 전역 선언
+*&amp;---------------------------------------------------------------------*
+
+TYPES: BEGIN OF gty_s_bukrs,
+         bukrs TYPE bukrs,
+         butxt TYPE butxt,
+       END OF gty_s_bukrs,
+       BEGIN OF gty_s_werks,
+         werks TYPE werks_d,
+         name1 TYPE name1,
+       END OF gty_s_werks,
+       BEGIN OF gty_s_kostl,
+         kokrs TYPE kokrs,
+         kostl TYPE kostl,
+       END OF gty_s_kostl.
+
+DATA: gv_bukrs  TYPE bukrs,
+      gv_werks  TYPE werks_d,
+      gv_kostl  TYPE kostl,
+      gt_bukrs  TYPE STANDARD TABLE OF gty_s_bukrs,
+      gt_werks  TYPE STANDARD TABLE OF gty_s_werks,
+      gt_kostl  TYPE STANDARD TABLE OF gty_s_kostl,
+      gt_check  TYPE zcms0070t,
+      gt_failed TYPE zcms0070t,
+      gs_return TYPE bapiret2.</code></pre>
+
+<h4>Include YCM_AUTH_DEMO6_SCR</h4>
+<p class="sub">세 축을 범위로 입력받는다. 비워 둔 축은 조회와 검사에서 제외한다.</p>
+<pre><code>*&amp;---------------------------------------------------------------------*
+*&amp; Include YCM_AUTH_DEMO6_SCR - 선택화면
+*&amp;---------------------------------------------------------------------*
+
+" 범위 입력 - 입력한 축만 조회/검사한다
+SELECT-OPTIONS: s_bukrs FOR gv_bukrs,
+                s_werks FOR gv_werks,
+                s_kostl FOR gv_kostl.</code></pre>
+
+<h4>Include YCM_AUTH_DEMO6_F01</h4>
+<p class="sub">조회(get_data), 실존 값 추출과 요청 구성(build_check), 검사와 차단
+처리(check_authority), 결과 표시(display_result)로 구성한다.</p>
+<pre><code>*&amp;---------------------------------------------------------------------*
+*&amp; Include YCM_AUTH_DEMO6_F01 - 서브루틴
+*&amp;---------------------------------------------------------------------*
+
+
+FORM get_data.
+  " 입력한 축만 조회 - 빈 select-option 축은 검사 대상에서 제외
+  " (판정은 s_bukrs[] - 헤더라인이 아닌 조건 테이블을 봐야 함)
+  IF s_bukrs[] IS NOT INITIAL.
+    SELECT bukrs, butxt
+      FROM t001
+      INTO TABLE @gt_bukrs
+      WHERE bukrs IN @s_bukrs.
+  ENDIF.
+
+  IF s_werks[] IS NOT INITIAL.
+    SELECT werks, name1
+      FROM t001w
+      INTO TABLE @gt_werks
+      WHERE werks IN @s_werks.
+  ENDIF.
+
+  IF s_kostl[] IS NOT INITIAL.
+    SELECT DISTINCT kokrs, kostl
+      FROM csks
+      INTO TABLE @gt_kostl
+      WHERE kostl IN @s_kostl.
+  ENDIF.
+
+  IF gt_bukrs IS INITIAL AND gt_werks IS INITIAL AND gt_kostl IS INITIAL.
+    MESSAGE s033(zcmm01) DISPLAY LIKE 'E'.
+    LEAVE LIST-PROCESSING.
+  ENDIF.
+ENDFORM.
+
+FORM build_check.
+  " 조회 결과에서 축별 distinct 값 추출 - 조건이 아니라 실존 값만 검사
+  DATA: lt_bukrs TYPE SORTED TABLE OF bukrs   WITH UNIQUE KEY table_line,
+        lt_werks TYPE SORTED TABLE OF werks_d WITH UNIQUE KEY table_line,
+        lt_kostl TYPE SORTED TABLE OF kostl   WITH UNIQUE KEY table_line,
+        lt_kokrs TYPE SORTED TABLE OF kokrs   WITH UNIQUE KEY table_line.
+
+  LOOP AT gt_bukrs ASSIGNING FIELD-SYMBOL(&lt;ls_bukrs&gt;).
+    INSERT &lt;ls_bukrs&gt;-bukrs INTO TABLE lt_bukrs.
+  ENDLOOP.
+  LOOP AT gt_werks ASSIGNING FIELD-SYMBOL(&lt;ls_werks&gt;).
+    INSERT &lt;ls_werks&gt;-werks INTO TABLE lt_werks.
+  ENDLOOP.
+  LOOP AT gt_kostl ASSIGNING FIELD-SYMBOL(&lt;ls_kostl&gt;).
+    INSERT &lt;ls_kostl&gt;-kostl INTO TABLE lt_kostl.
+    INSERT &lt;ls_kostl&gt;-kokrs INTO TABLE lt_kokrs.
+  ENDLOOP.
+
+  " 전 축을 한 번의 체크 요청으로 구성 (BASE 누락 주의 - 앞 축이 덮어써짐)
+  gt_check = VALUE #( FOR lv_b IN lt_bukrs
+    ( xuobject = 'F_BKPF_BUK' xufield = 'BUKRS' value = CONV #( lv_b ) ) ).
+  gt_check = VALUE #( BASE gt_check FOR lv_w IN lt_werks
+    ( xuobject = 'M_MATE_WRK' xufield = 'WERKS' value = CONV #( lv_w ) ) ).
+  gt_check = VALUE #( BASE gt_check FOR lv_k IN lt_kostl
+    ( xuobject = 'K_CSKS' xufield = 'KOSTL' value = CONV #( lv_k ) ) ).
+  gt_check = VALUE #( BASE gt_check FOR lv_o IN lt_kokrs
+    ( xuobject = 'K_CSKS' xufield = 'KOKRS' value = CONV #( lv_o ) ) ).
+ENDFORM.
+
+FORM check_authority.
+  " 한 번의 호출로 전 축 검사 - 하나라도 권한 없으면 전체 거부(차단형)
+  zcmcl_auth_check=&gt;check( EXPORTING it_check  = gt_check
+                           IMPORTING es_return = gs_return
+                                     et_failed = gt_failed ).
+
+  IF gs_return-type = 'E'.
+    " 부족 전량을 목록으로 표시 (실전 차단형은 MESSAGE ... TYPE 'E' 한 줄)
+    " LEAVE LIST-PROCESSING 금지 - 작성한 목록이 버려지고 화면만 돌아감
+    WRITE: / TEXT-t06, lines( gt_failed ).
+    LOOP AT gt_failed INTO DATA(ls_fail).
+      WRITE: / '  ', TEXT-t04, ls_fail-xufield, ls_fail-value.
+    ENDLOOP.
+    MESSAGE gs_return-message TYPE 'S' DISPLAY LIKE 'E'.
+  ENDIF.
+ENDFORM.
+
+FORM display_result.
+  " 여기 도달 = 요청한 전 값에 권한 있음
+  WRITE: / TEXT-t11, lines( gt_bukrs ).
+  LOOP AT gt_bukrs INTO DATA(ls_bukrs).
+    WRITE: / '  ', ls_bukrs-bukrs, ls_bukrs-butxt.
+  ENDLOOP.
+
+  SKIP.
+  WRITE: / TEXT-t12, lines( gt_werks ).
+  LOOP AT gt_werks INTO DATA(ls_werks).
+    WRITE: / '  ', ls_werks-werks, ls_werks-name1.
+  ENDLOOP.
+
+  SKIP.
+  WRITE: / TEXT-t13, lines( gt_kostl ).
+  LOOP AT gt_kostl INTO DATA(ls_kostl).
+    WRITE: / '  ', ls_kostl-kokrs, ls_kostl-kostl.
+  ENDLOOP.
+ENDFORM.</code></pre>
+
+<h3>대안 · 필터링형 (걸러내고 나머지만 표시)</h3>
+<p>차단하지 않고 권한 있는 데이터만 보여주는 리포트는 check_authority를 아래
+filter_authority로 바꾼다. es_return으로 중단하는 대신 et_failed의 불허 값으로
+데이터를 제거한다. 메인의 <code>IF gs_return-type = 'S'.</code> 분기도 제거하고
+display_result를 항상 호출한다.</p>
+<pre><code>*&amp;---------------------------------------------------------------------*
+*&amp; Form FILTER_AUTHORITY
+*&amp;---------------------------------------------------------------------*
+FORM filter_authority.
+
+  zcmcl_auth_check=&gt;check( EXPORTING it_check  = gt_check
+                           IMPORTING es_return = gs_return
+                                     et_failed = gt_failed ).
+
+  " 불허 값을 축별 RANGE로 분리
+  DATA: lr_bukrs TYPE RANGE OF bukrs,
+        lr_werks TYPE RANGE OF werks_d,
+        lr_kostl TYPE RANGE OF kostl,
+        lr_kokrs TYPE RANGE OF kokrs.
+
+  LOOP AT gt_failed INTO DATA(ls_fail).
+    CASE ls_fail-xufield.
+      WHEN 'BUKRS'.
+        APPEND VALUE #( sign = 'I' option = 'EQ' low = ls_fail-value )
+          TO lr_bukrs.
+      WHEN 'WERKS'.
+        APPEND VALUE #( sign = 'I' option = 'EQ' low = ls_fail-value )
+          TO lr_werks.
+      WHEN 'KOSTL'.
+        APPEND VALUE #( sign = 'I' option = 'EQ' low = ls_fail-value )
+          TO lr_kostl.
+      WHEN 'KOKRS'.
+        APPEND VALUE #( sign = 'I' option = 'EQ' low = ls_fail-value )
+          TO lr_kokrs.
+    ENDCASE.
+  ENDLOOP.
+
+  " 빈 RANGE로 DELETE 금지 - IN 빈 범위는 전체 매치라 전량 삭제됨
+  IF lr_bukrs IS NOT INITIAL.
+    DELETE gt_bukrs WHERE bukrs IN lr_bukrs.
+  ENDIF.
+  IF lr_werks IS NOT INITIAL.
+    DELETE gt_werks WHERE werks IN lr_werks.
+  ENDIF.
+  IF lr_kostl IS NOT INITIAL.
+    DELETE gt_kostl WHERE kostl IN lr_kostl.
+  ENDIF.
+  IF lr_kokrs IS NOT INITIAL.
+    DELETE gt_kostl WHERE kokrs IN lr_kokrs.
+  ENDIF.
+
+  " 전량 제거시 안내 후 종료
+  IF gt_bukrs IS INITIAL AND gt_werks IS INITIAL AND gt_kostl IS INITIAL.
+    MESSAGE s082(zcmm01) DISPLAY LIKE 'E'.
+    LEAVE LIST-PROCESSING.
+  ENDIF.
+
+ENDFORM.</code></pre>
+
+<div class="tblwrap"><table>
+  <tr><th></th><th>차단형</th><th>필터링형</th></tr>
+  <tr><td>부분 권한 시</td><td>전체 거부 ("요청 전체에 권한 필요")</td><td>볼 수 있는 것만 표시 + 제외 안내</td></tr>
+  <tr><td>어울리는 프로그램</td><td>처리/변경성, 정확한 범위 요청형</td><td>전체 조회 허용 리포트</td></tr>
+  <tr><td>사용하는 리턴</td><td>es_return</td><td>et_failed</td></tr>
+</table></div>
+
+<h3>실행 결과</h3>
+
+<figure class="shot">
+  <img src="images/07_01_demo6_screen.png" alt="데모6 선택화면">
+  <figcaption>범위 입력 화면. 입력한 축만 검사한다</figcaption>
+</figure>
+
+<figure class="shot">
+  <img src="images/07_02_demo6_block.png" alt="데모6 차단">
+  <figcaption>차단 시 화면. 조회된 실존 값을 검사하므로 비허용 값이 전부 표시된다</figcaption>
+</figure>
+
+<figure class="shot">
+  <img src="images/07_03_demo6_pass.png" alt="데모6 통과">
+  <figcaption>통과 시 화면. 요청한 값 전부에 권한이 있는 경우</figcaption>
+</figure>
+
+<!-- ================================================================ -->
+<h2 id="s08"><span class="no">08</span>테스트 환경 구축</h2>
+
+<div class="callout danger"><b>테스트 계정 사용</b>
+권한 체크 결과는 실행 계정에 따라 달라진다. 광역 권한을 가진 개발 계정으로는
+모두 통과하므로 차단 케이스를 검증할 수 없다. 제한된 테스트 계정으로 수행한다.</div>
+
+<h3>8-1. 테스트 계정 (SU01)</h3>
+<p>Dialog 사용자 1개(예: ZTEST01). 롤 외 권한 없음.</p>
+
+<figure class="shot">
+  <img src="images/08_01_su01.png" alt="SU01 테스트 계정">
+  <figcaption>테스트 계정. 권한은 롤로만 부여한다</figcaption>
+</figure>
+
+<h3>8-2. 베이스 롤 — 실행 수단만 (항상 배정)</h3>
+<ul>
+  <li>PFCG 메뉴 방식으로 트랜잭션 3개: <b>SA38</b>(실행), <b>SU53</b>(실패 분석),
+    <b>SU56</b>(버퍼 조회)</li>
+  <li>SU24 제안 정리: S_DEVELOP 삭제 / S_PROGRAM 비활성화 / S_PROGNAM은 대상
+    프로그램 목록으로 제한</li>
+</ul>
+
+<div class="callout danger"><b>테스트 계정은 SE38을 사용하지 않는다</b>
+SE38은 실행 전에 S_DEVELOP(개발 권한)를 요구하므로 공통 모듈에 도달하기 전에
+차단된다. SU53에 S_DEVELOP가 표시되면 공통 모듈이 아니라 SE38에서 차단된 것이다.
+테스트 계정의 실행 수단은 SA38로 한다.</div>
+
+<figure class="shot">
+  <img src="images/08_02_pfcg_base_menu.png" alt="베이스 롤 메뉴">
+  <figcaption>베이스 롤. 실행 수단만 부여한다</figcaption>
+</figure>
+
+<h3>8-3. 테스트 롤 — 권한 부여용 (시나리오별 배정/회수)</h3>
+<p>체크에 사용하는 표준 오브젝트를 수동(Manually)으로 추가하고 값은 일부만 부여한다.
+<code>*</code>로 부여하면 차단 케이스를 재현할 수 없다.</p>
+<div class="tblwrap"><table>
+  <tr><th>오브젝트</th><th>부여 값 예 ("한국 담당자" 페르소나)</th></tr>
+  <tr><td>F_BKPF_BUK</td><td>BUKRS=1000, ACTVT=03</td></tr>
+  <tr><td>M_MATE_WRK</td><td>WERKS=3110, ACTVT=03</td></tr>
+  <tr><td>K_CSKS</td><td>KOKRS=SW00, KOSTL=KOC1*, ACTVT=03</td></tr>
+</table></div>
+<p class="sub">ACTVT 값은 인스턴스 구성용이며 체크에 영향을 주지 않는다(원칙 5). 조직레벨($)
+필드는 Organizational levels 팝업에서 입력하며 롤 전체에 공통 적용된다.</p>
+
+<figure class="shot">
+  <img src="images/08_03_pfcg_test_role.png" alt="테스트 롤 권한">
+  <figcaption>테스트 롤. 일부 값만 부여해 차단 케이스를 재현한다</figcaption>
+</figure>
+
+<h3>8-4. 운영 규칙</h3>
+<ul>
+  <li><b>롤 변경 → 프로파일 재생성 → User Comparison → 재로그인</b> (권한 버퍼)</li>
+  <li>차단이 발생하면 SU53으로 실패 오브젝트를 확인한다</li>
+  <li>메시지가 <code>ZCMM01:080 값</code> 원시 표기면 SE91 텍스트 미등록</li>
+  <li>디버깅이 필요하면 S_DEVELOP를 OBJTYPE=DEBUG, ACTVT=03(조회)으로만 부여한다.
+    02(변경)는 디버거에서 변수를 조작해 체크를 우회할 수 있으므로 부여하지 않는다.</li>
+</ul>
+
+<!-- ================================================================ -->
+<h2 id="s09"><span class="no">09</span>테스트 시나리오</h2>
+
+<h3>데모 1 (단일 파라미터)</h3>
+<div class="tblwrap"><table>
+  <tr><th>#</th><th>입력</th><th>기대</th></tr>
+  <tr><td>T1</td><td>BUKRS=허용값</td><td>통과</td></tr>
+  <tr><td>T2</td><td>BUKRS=비허용값</td><td>차단. 메시지 080, SU53에 해당 오브젝트 표시</td></tr>
+  <tr><td>T3</td><td>3축 전부 허용값</td><td>통과. KOKRS 자동 포함 확인</td></tr>
+  <tr><td>T4</td><td>허용+비허용 혼합 2축</td><td>차단. 부족 2건 목록과 081 "외 1건" 메시지</td></tr>
+  <tr><td>T5</td><td>3축 전부 비허용</td><td>차단. 부족 3건과 "외 2건" 메시지</td></tr>
+  <tr><td>T6</td><td>BUKRS 비움</td><td>화면에서 필수 입력을 요구하므로 실행되지 않는다</td></tr>
+  <tr><td>T7</td><td>타 프로그램에서 SUBMIT 값 없이</td><td>메시지 057로 차단. AT SELECTION-SCREEN 검증</td></tr>
+  <tr><td>T8</td><td>EN 로그온으로 T4 재실행</td><td>EN 메시지 표시. 로그온 언어에 따라 자동 선택</td></tr>
+</table></div>
+
+<h3>데모 2 (범위값)</h3>
+<div class="tblwrap"><table>
+  <tr><th>#</th><th>입력</th><th>기대</th></tr>
+  <tr><td>D1</td><td>s_bukrs=허용값+비허용값 2건</td><td>차단. 부족 목록에 비허용 값 표시</td></tr>
+  <tr><td>D2</td><td>s_bukrs=허용값만</td><td>통과</td></tr>
+  <tr><td>D3</td><td>허용 범위의 다른 축 조합</td><td>통과</td></tr>
+  <tr><td>D4</td><td>비허용 패턴 (예: 타 법인 CC)</td><td>차단. 부족 다수와 "외 N건" 메시지</td></tr>
+  <tr><td>D5</td><td>전부 비움</td><td>메시지 033. 조회 조건이 없으므로 검사 대상도 없다</td></tr>
+</table></div>
+
+<!-- ================================================================ -->
+<h2 id="s10"><span class="no">10</span>개발 규약</h2>
+
+<ol>
+  <li>오브젝트와 필드는 프로그램이 업무 문맥에 따라 결정하고, 코드리뷰에서 확인한다</li>
+  <li>값이 빈 행은 전달하지 않는다. <code>DELETE gt_check WHERE value IS INITIAL</code></li>
+  <li>한 오브젝트의 복수 필드는 행을 나눠 전달한다(예: K_CSKS의 KOKRS와 KOSTL)</li>
+  <li>필수 조직 파라미터는 OBLIGATORY와 AT SELECTION-SCREEN 검증을 함께 적용한다</li>
+  <li>범위 화면은 조회 후 실존 값을 검사한다. 차단형과 필터링형은 프로그램 성격에 따라 선택한다</li>
+  <li>건별로 체크하지 않고 distinct 값 종류 수만큼만 검사한다</li>
+  <li>실패 상세가 필요한 프로그램만 et_failed를 수신한다</li>
+  <li>신규 텍스트는 EN을 원본으로 작성하고 KO 번역을 등록한다</li>
+</ol>
+
+<!-- ================================================================ -->
+
+<h2 id="s11"><span class="no">11</span>FAQ</h2>
+
+<p><b>Q. ACTVT는 왜 검사하지 않나?</b><br>
+체크 목적이 조직 값에 대한 접근 가능 여부이므로 값 일치만 확인한다. 활동 구분이
+필요해지면 구조에 필드를 추가하는 방식으로 확장할 수 있다.</p>
+
+<p><b>Q. 프로그램 실행 자체는 어떻게 통제하나?</b><br>
+PFCG의 T-code 부여(S_TCODE)로 처리한다. 본 모듈은 실행된 프로그램 내에서의 조직
+범위를 담당한다.</p>
+
+<p><b>Q. 오브젝트를 공통 모듈에서 일괄 결정할 수 없나?</b><br>
+같은 필드라도 업무 문맥에 따라 적합한 오브젝트가 다르다. BUKRS를 사용하는 표준
+오브젝트만 수십 개이고(TOBJ), 시스템에는 대표 오브젝트를 지정하는 메타데이터가
+없어 자동 결정이 불가능하다. 그래서 프로그램이 직접 지정한다. TOBJ 조회와 SU20
+where-used는 후보 탐색 용도로 사용한다.</p>
+
+<p><b>Q. 부족한 권한이 여러 개면 사용자에게 어떻게 표시되나?</b><br>
+"첫 건 외 N건" 형태의 메시지가 표시되고, 프로그램이 전체 목록을 함께 표시할 수도
+있다. 메시지는 로그온 언어에 따라 EN 또는 KO로 표시된다.</p>
+
+<p><b>Q. 성능에 영향은 없나?</b><br>
+권한 체크는 로그인 시 메모리에 로드된 버퍼를 조회한다. 건별이 아닌 distinct 값
+단위로 검사하므로 데이터 건수와 무관하다.</p>
+
+<div class="foot">
+  CBO Program Authorization Check
+</div>
+
+</div>
+</body>
+</html>
