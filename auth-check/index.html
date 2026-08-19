@@ -274,13 +274,82 @@
 <!-- ================================================================ -->
 <h2 id="s03"><span class="no">03</span>기초 개념</h2>
 
-<p>모든 구현의 바탕은 ABAP 문장 하나다:</p>
+<p>권한 검사가 어떤 구조로 동작하는지 정리한다. 이후 장의 코드는 모두 이 구조를
+따르므로, 여기서 용어와 흐름을 맞춰 두면 나머지는 그 조합으로 읽힌다.</p>
+
+<h3>3-1. 문장 하나가 하는 일</h3>
+
+<p>권한 검사는 ABAP 문장 하나로 수행한다. 이 문서의 코드는 결국 이 문장을 어떻게
+부르느냐의 문제다.</p>
 
 <pre><code>AUTHORITY-CHECK OBJECT 'F_BKPF_BUK'
   ID 'BUKRS' FIELD '1000'.</code></pre>
 
-<p>로그인한 사용자의 권한 버퍼에 해당 오브젝트의 값 조합이 있는지 확인한다.
-<code>sy-subrc</code>가 0이면 허용, 그 외는 거부다.</p>
+<p>"지금 실행 중인 사용자가 회사코드 1000에 접근할 수 있는가"를 시스템에 묻는
+문장이다. 질문의 형태는 언제나 오브젝트, 필드, 값 세 가지로 고정된다.</p>
+
+<div class="tblwrap"><table>
+  <tr><th>구성</th><th>예시</th><th>의미</th></tr>
+  <tr><td>OBJECT</td><td><code>'F_BKPF_BUK'</code></td><td>어떤 권한 오브젝트로 물을 것인가. 이 오브젝트는 회계전표의 회사코드 권한을 뜻한다</td></tr>
+  <tr><td>ID</td><td><code>'BUKRS'</code></td><td>그 오브젝트가 가진 필드 중 무엇을 볼 것인가</td></tr>
+  <tr><td>FIELD</td><td><code>'1000'</code></td><td>이번에 확인할 값</td></tr>
+  <tr><td>결과</td><td><code>sy-subrc</code></td><td>문장 실행 직후 시스템이 판정 결과를 담아 준다</td></tr>
+</table></div>
+
+<div class="tblwrap"><table>
+  <tr><th>sy-subrc</th><th>뜻</th><th>처리</th></tr>
+  <tr><td>0</td><td>해당 값에 권한이 있다</td><td>계속 진행</td></tr>
+  <tr><td>4</td><td>권한이 없다</td><td>차단</td></tr>
+  <tr><td>그 외(8, 12, 24 등)</td><td>오브젝트나 필드 지정이 잘못됐다</td><td>차단하고 코드를 확인한다</td></tr>
+</table></div>
+
+<p>실무에서는 0인지 아닌지로만 나눈다. 4와 그 외를 구분해 다르게 처리할 이유는 없다.
+어느 쪽이든 사용자를 통과시킬 수 없기 때문이다.</p>
+
+<h3>3-2. 판정의 근거가 되는 값은 어디에 있는가</h3>
+
+<p>프로그램은 값을 하나 제시하고 가부만 돌려받는다. 허용 값의 목록은 프로그램이
+갖고 있지 않고, 권한 컨설턴트가 PFCG에서 Role에 넣어 둔 것을 시스템이 참조한다.</p>
+
+<figure class="diagram">
+<svg viewBox="0 0 820 190" xmlns="http://www.w3.org/2000/svg" role="img"
+     aria-label="PFCG Role에 부여된 값이 로그온 시 권한 버퍼로 올라오고, 프로그램의 AUTHORITY-CHECK가 그 버퍼와 대조해 sy-subrc를 돌려주는 흐름"
+     font-family="'Pretendard','Malgun Gothic',sans-serif" font-size="13.5">
+  <defs>
+    <marker id="ar3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#8a8f96"/>
+    </marker>
+  </defs>
+
+  <rect x="16" y="40" width="170" height="70" rx="4" fill="#f2f7ec" stroke="#4a7a35"/>
+  <text x="101" y="66" text-anchor="middle" font-weight="700" fill="#3d5c2c">PFCG Role</text>
+  <text x="101" y="86" text-anchor="middle" font-size="11.5" fill="#57606a">BUKRS = 1000</text>
+  <text x="101" y="102" text-anchor="middle" font-size="11.5" fill="#57606a">컨설턴트가 부여</text>
+
+  <rect x="226" y="40" width="170" height="70" rx="4" fill="#f2f7ec" stroke="#4a7a35"/>
+  <text x="311" y="66" text-anchor="middle" font-weight="700" fill="#3d5c2c">권한 버퍼</text>
+  <text x="311" y="86" text-anchor="middle" font-size="11.5" fill="#57606a">로그온 시 메모리로</text>
+  <text x="311" y="102" text-anchor="middle" font-size="11.5" fill="#57606a">로드된 상태</text>
+
+  <rect x="436" y="40" width="170" height="70" rx="4" fill="#eaf1f8" stroke="#33608c"/>
+  <text x="521" y="66" text-anchor="middle" font-weight="700" fill="#1f4d78">AUTHORITY-CHECK</text>
+  <text x="521" y="86" text-anchor="middle" font-size="11.5" fill="#57606a">프로그램이 값 하나를</text>
+  <text x="521" y="102" text-anchor="middle" font-size="11.5" fill="#57606a">제시해 대조</text>
+
+  <rect x="646" y="40" width="158" height="70" rx="4" fill="#fdf6e8" stroke="#9a6700"/>
+  <text x="725" y="66" text-anchor="middle" font-weight="700" fill="#7a5d3e">sy-subrc</text>
+  <text x="725" y="86" text-anchor="middle" font-size="11.5" fill="#57606a">0 통과</text>
+  <text x="725" y="102" text-anchor="middle" font-size="11.5" fill="#57606a">4 거부</text>
+
+  <line x1="188" y1="75" x2="222" y2="75" stroke="#8a8f96" marker-end="url(#ar3)"/>
+  <line x1="398" y1="75" x2="432" y2="75" stroke="#8a8f96" marker-end="url(#ar3)"/>
+  <line x1="608" y1="75" x2="642" y2="75" stroke="#8a8f96" marker-end="url(#ar3)"/>
+
+  <text x="16" y="150" font-size="12" fill="#57606a">값을 넣는 쪽(권한 컨설턴트)과 값을 확인하는 쪽(프로그램)이 분리되어 있다.</text>
+  <text x="16" y="170" font-size="12" fill="#57606a">그래서 롤의 값이 바뀌어도 프로그램은 고치지 않는다.</text>
+</svg>
+<figcaption>롤에 부여된 값이 로그온 시 버퍼로 올라오고, 프로그램은 그 버퍼에 값 하나를 물어본다</figcaption>
+</figure>
 
 <div class="tblwrap"><table>
   <tr><th>구성요소</th><th>역할</th></tr>
@@ -289,7 +358,42 @@
   <tr><td>권한 버퍼</td><td>배정된 롤의 값이 로그인 시점에 메모리로 로드된 상태다</td></tr>
 </table></div>
 
-<p>실무상 유의할 점은 다음 세 가지다.</p>
+<h3>3-3. 한 건이 처리되는 과정</h3>
+
+<p>사용자가 선택화면에 회사코드를 입력하고 실행했을 때 무엇이 오가는지 값과 함께
+따라가면 다음과 같다. 이 사용자의 롤에는 회사코드 1000만 부여되어 있다고 하자.</p>
+
+<div class="tblwrap"><table>
+  <tr><th>단계</th><th>1000을 입력한 경우</th><th>3110을 입력한 경우</th></tr>
+  <tr><td>화면 입력</td><td>p_bukrs = 1000</td><td>p_bukrs = 3110</td></tr>
+  <tr><td>요청 구성 (프로그램)</td><td>F_BKPF_BUK / BUKRS / 1000 한 행</td><td>같은 형태, 값만 3110</td></tr>
+  <tr><td>공통 클래스 호출</td><td colspan="2">요청 테이블을 그대로 넘긴다</td></tr>
+  <tr><td>AUTHORITY-CHECK</td><td>버퍼에 1000이 있다</td><td>버퍼에 3110이 없다</td></tr>
+  <tr><td>sy-subrc</td><td>0</td><td>4</td></tr>
+  <tr><td>클래스 리턴</td><td>es_return-type = 'S'</td><td>'E'와 메시지, et_failed에 해당 행</td></tr>
+  <tr><td>프로그램</td><td>본 처리 진행</td><td>메시지 표시 후 중단</td></tr>
+</table></div>
+
+<p>표의 마지막 줄에서 갈린다. 차단은 공통 클래스가 하지 않는다. 클래스는 판정 결과만
+돌려주고, 중단 여부는 호출한 프로그램이 정한다. 조회 리포트라면 차단 대신 권한 없는
+데이터만 걸러내는 방식도 쓸 수 있다(07장).</p>
+
+<h3>3-4. 왜 공통 모듈로 묶는가</h3>
+
+<p>AUTHORITY-CHECK 자체는 두 줄짜리 문장이다. 그런데도 공통 모듈을 두는 이유는
+프로그램마다 직접 쓰면 다음이 반복되기 때문이다.</p>
+<ul>
+  <li>검사할 축이 늘어날 때마다 문장과 분기가 늘어난다. 한 축을 빠뜨려도 아무도 모른다.</li>
+  <li>거부 메시지를 프로그램마다 다르게 만든다. 사용자는 어떤 값이 막혔는지 알기 어렵다.</li>
+  <li>첫 실패에서 중단하면 사용자는 권한 신청을 여러 번 반복하게 된다.</li>
+</ul>
+<p>공통 모듈은 오브젝트, 필드, 값의 목록을 받아 전량을 검사하고 부족한 것을 한 번에
+돌려준다. 프로그램에는 무엇을 검사할지 정하는 코드와 거부 시 어떻게 할지 정하는
+코드만 남는다.</p>
+
+<h3>3-5. 실무상 유의점</h3>
+
+<p>구현과 테스트에서 자주 걸리는 세 가지다.</p>
 <ul>
   <li>롤 변경 후에는 재로그인이 필요하다. 체크는 DB가 아닌 버퍼를 참조한다.</li>
   <li>롤 값에 <code>KOC1*</code>과 같은 패턴을 부여할 수 있으며, 체크 시점에 매치된다.</li>
@@ -454,6 +558,22 @@ EN 로그온 상태에서 원본을 입력한 뒤 Goto → Translation에서 KO�
         WITH lv_v1 lv_rest INTO es_return-message.
     ENDIF.</code></pre>
 
+<h4>코드 읽기</h4>
+<p class="sub">메서드는 다섯 단계로 나뉜다.</p>
+<div class="tblwrap"><table>
+  <tr><th>단계</th><th>코드</th><th>하는 일</th></tr>
+  <tr><td>1</td><td><code>LOOP AT it_check</code></td><td>프로그램이 넘긴 요청을 한 행씩 꺼낸다. 한 행이 "오브젝트 하나 + 필드 하나 + 값 하나"다</td></tr>
+  <tr><td>2</td><td><code>IF ... IS INITIAL</code></td><td>세 항목 중 하나라도 비어 있으면 검사할 수 없다. 통과시키지 않고 실패로 적는다</td></tr>
+  <tr><td>3</td><td><code>AUTHORITY-CHECK</code></td><td>실제 판정. 값 자리에 변수를 넣어 어떤 오브젝트든 같은 문장으로 검사한다</td></tr>
+  <tr><td>4</td><td><code>IF sy-subrc &lt;&gt; 0</code></td><td>거부된 행을 et_failed에 모은다. 여기서 중단하지 않고 다음 행으로 넘어간다</td></tr>
+  <tr><td>5</td><td><code>lines( et_failed )</code></td><td>루프가 끝난 뒤 실패 건수로 결과를 정한다. 0이면 S, 1건이면 메시지 080, 여러 건이면 081</td></tr>
+</table></div>
+
+<p>3단계가 이 클래스의 핵심이다. 보통 AUTHORITY-CHECK는 오브젝트 이름을 따옴표 안에
+직접 적지만, 여기서는 변수 <code>ls_check-xuobject</code>를 넣었다. 덕분에 회사코드든
+플랜트든 코스트센터든 같은 문장 하나로 검사할 수 있고, 이것이 공통 모듈이 성립하는
+이유다.</p>
+
 <div class="callout"><b>설계 근거</b>
 <ul style="margin:4px 0">
 <li>첫 실패에서 중단하지 않고 전량 검사한다. 중단하면 사용자가 권한 신청을 반복하게
@@ -587,6 +707,21 @@ FORM display_result.
 
   MESSAGE gs_return-message TYPE 'S' DISPLAY LIKE 'E'.
 ENDFORM.</code></pre>
+
+<h4>코드 읽기</h4>
+<p>이 프로그램에서 실제로 판단이 일어나는 곳은 <code>build_check</code> 하나다.
+나머지는 화면 검증, 호출, 표시일 뿐이다.</p>
+<div class="tblwrap"><table>
+  <tr><th>코드</th><th>왜 이렇게 쓰는가</th></tr>
+  <tr><td><code>gt_check = VALUE #( ... )</code></td><td>검사할 축을 한 번에 나열한다. 오브젝트 이름을 여기에 적는 이유는, 같은 BUKRS라도 업무 문맥에 따라 맞는 오브젝트가 다르기 때문이다. 이 판단은 프로그램만 할 수 있다</td></tr>
+  <tr><td><code>DELETE gt_check WHERE value IS INITIAL</code></td><td>화면에서 비워 둔 축을 요청에서 뺀다. 값이 빈 행은 공통 클래스가 실패로 처리하므로(fail-closed), 지우지 않으면 입력하지도 않은 축 때문에 차단된다</td></tr>
+  <tr><td><code>IF p_kostl IS NOT INITIAL</code> 블록</td><td>코스트센터는 관리영역과 짝이다. 하나의 오브젝트(K_CSKS)에 필드가 둘이므로 행을 두 개로 나눠 전달한다. 한 행에 두 필드를 넣는 구조가 아니다</td></tr>
+  <tr><td><code>check_authority</code>의 호출</td><td>여기서는 결과를 받기만 한다. 클래스는 차단하지 않는다</td></tr>
+  <tr><td><code>display_result</code>의 분기</td><td>실 CBO라면 이 자리에서 <code>MESSAGE gs_return-message TYPE 'E'</code> 한 줄로 끝낸다. 데모라서 검사 내역을 보여줄 뿐이다</td></tr>
+</table></div>
+
+<p>정리하면 이 프로그램이 하는 일은 "무엇을 검사할지 목록을 만들어 넘기고, 결과에
+따라 진행 여부를 정하는 것"이다. AUTHORITY-CHECK 문장은 한 번도 직접 쓰지 않는다.</p>
 
 <h3>Text Elements (EN 원본 → KO 번역)</h3>
 <div class="tblwrap"><table>
@@ -852,6 +987,21 @@ FORM display_result.
     WRITE: / '  ', ls_kostl-kokrs, ls_kostl-kostl.
   ENDLOOP.
 ENDFORM.</code></pre>
+
+<h4>코드 읽기</h4>
+<p>06장과 다른 점은 검사할 값을 화면에서 바로 얻을 수 없다는 것 하나다. 그래서
+조회가 앞에 붙는다.</p>
+<div class="tblwrap"><table>
+  <tr><th>서브루틴</th><th>하는 일</th><th>빠뜨리면 생기는 일</th></tr>
+  <tr><td><code>get_data</code></td><td>입력한 축만 조회해 실존 값을 확보한다</td><td>select-options에는 "1000~3140" 같은 조건이 들어 있을 뿐, 그 사이에 어떤 회사코드가 실제로 있는지는 조회해야 알 수 있다</td></tr>
+  <tr><td><code>s_bukrs[] IS NOT INITIAL</code> 가드</td><td>비워 둔 축은 조회하지 않는다</td><td>가드 없이 <code>WHERE bukrs IN @s_bukrs</code>를 돌리면 빈 조건이 전체 일치로 동작해 마스터 전체가 검사 대상이 된다</td></tr>
+  <tr><td><code>build_check</code>의 SORTED TABLE</td><td>조회 결과에서 중복을 없앤 값 목록을 만든다</td><td>전표 10만 건이라도 회사코드 종류는 몇 개뿐이다. 건별로 검사하면 같은 값을 수만 번 확인하게 된다</td></tr>
+  <tr><td><code>check_authority</code></td><td>모든 축을 한 번의 호출로 검사한다</td><td>축마다 나눠 부르면 부족한 권한도 축마다 따로 나온다. 한 번에 넘겨야 "부족 전량"을 한 번에 받는다</td></tr>
+</table></div>
+
+<p>즉 이 장의 요지는 "조건을 검사하는 것이 아니라, 조건으로 조회한 결과의 값 종류를
+검사한다"는 것이다. 사용자가 범위를 어떻게 입력하든 검사 대상은 실제 존재하는 값으로
+한정된다.</p>
 
 <h3>대안 · 필터링형 (걸러내고 나머지만 표시)</h3>
 <p>차단하지 않고 권한 있는 데이터만 보여주는 리포트는 check_authority를 아래
