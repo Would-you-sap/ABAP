@@ -2,14 +2,14 @@
 *& Module      : CM
 *& Program ID  : YCM_AUTH_DEMO6
 *& Title       : CBO Authorization Check - Filtering Reference
-*& Author      : (작성자)
-*& Create Date : (작성일)
+*& Author      : SWDEV01
+*& Create Date : 2026.08.07
 *&--------------------------------------------------------------------*
 *& MODIFICATION LOG
 *&--------------------------------------------------------------------*
 *& No.  Date.        Author.  Description.
 *&--------------------------------------------------------------------*
-*& 001  (일자)       (ID)     Initial Coding
+*& 001  2026.08.07   SWDEV01  Initial Coding
 *&--------------------------------------------------------------------*
 REPORT ycm_auth_demo6.
 
